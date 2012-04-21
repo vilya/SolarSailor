@@ -20,6 +20,7 @@ var game = {
   'targetDistance': 5.0,
 
   'quadBuf': null,
+  'circleBuf': null,
   'racerPosBuf': null,
   'racerRadiusBuf': null,
   'obstaclePosBuf': null,
@@ -59,6 +60,13 @@ var game = {
 
   'keysDown': {},
 };
+
+
+//
+// Constants
+//
+
+var kG = 667.2; // Newton's gravitational constant, G.
 
 
 //
@@ -203,6 +211,7 @@ function init(drawCanvas, textCanvas)
 
   // Create the vertex buffers.
   game.quadBuf = gl.createBuffer();
+  game.circleBuf = gl.createBuffer();
   game.racerPosBuf = gl.createBuffer();
   game.racerRadiusBuf = gl.createBuffer();
   game.obstaclePosBuf = gl.createBuffer();
@@ -270,7 +279,7 @@ function init(drawCanvas, textCanvas)
   game.numRacers = 4;
   for (var i = 0; i < game.numRacers; i++) {
     var radius = Math.random() * 5.0 + 2.5;
-    var volume = 4.0 / 3.0 * Math.PI * Math.pow(radius, 3.0);
+    var volume = Math.PI * Math.pow( (radius / game.viewportHeight), 2.0);
     var density = Math.random() + 5.0; // Units: grammes per cubic centimetre -> g/cm^3. Earth is 5.52 g/cm^3
 
     game.racerPos.push(Math.random(), Math.random());
@@ -309,7 +318,7 @@ function init(drawCanvas, textCanvas)
   game.numObstacles = 16;
   for (var i = 0; i < game.numObstacles; i++) {
     var radius = Math.random() * 10.0 + 2.5;
-    var volume = 4.0 / 3.0 * Math.PI * Math.pow(radius, 3.0);
+    var volume = Math.PI * Math.pow( (radius / game.viewportHeight), 2.0);
     var density = Math.random() + 5.0; // Units: grammes per cubic centimetre -> g/cm^3. Earth is 5.52 g/cm^3
 
     game.obstaclePos.push(Math.random(), Math.random());
@@ -362,7 +371,7 @@ function draw()
   game.drawShader.enableAttribs();
   gl.uniformMatrix4fv(game.drawShader.uniforms['worldToViewportMatrix'], false, transform);
 
-  gl.uniform3f(game.drawShader.uniforms['color'], 0.0, 0.0, 1.0);
+  gl.uniform4f(game.drawShader.uniforms['color'], 0.0, 0.0, 1.0, 1.0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerPosBuf);
   gl.vertexAttribPointer(game.drawShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerRadiusBuf);
@@ -370,7 +379,7 @@ function draw()
   gl.drawArrays(gl.POINTS, 0, game.numRacers);
 
   // Draw the obstacles, using the same shader 
-  gl.uniform3f(game.drawShader.uniforms['color'], 0.435, 0.220, 0.0);
+  gl.uniform4f(game.drawShader.uniforms['color'], 0.435, 0.220, 0.0, 1.0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.obstaclePosBuf);
   gl.vertexAttribPointer(game.drawShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.obstacleRadiusBuf);
@@ -437,6 +446,31 @@ function update()
       game.racerPos[i] = 2.0 - game.racerPos[i];
       game.racerVel[i] = -game.racerVel[i];
     }
+
+    game.racerAccel[i] = 0.0;
+  }
+
+  // Calculate the effect of gravity on each of the racers.
+  for (var i = 0; i < game.numRacers; i++) {
+    var gx = 0;
+    var gy = 0;
+
+    var m1 = game.racerMass[i];
+    for (var o = 0; o < game.numObstacles; o++) {
+      var m2 = game.obstacleMass[o];
+      var dx = (game.obstaclePos[o * 2] - game.racerPos[i * 2]);
+      var dy = (game.obstaclePos[o * 2 + 1] - game.racerPos[i * 2 + 1]);
+      var distSqr = dx * dx + dy * dy;
+      if (distSqr < 1e-6)
+        continue;
+
+      var F = kG * m1 * m2 / distSqr;
+      gx += F * dx;
+      gy += F * dy;
+    }
+
+    game.racerAccel[i * 2] += gx;
+    game.racerAccel[i * 2 + 1] += gy;
   }
 
   // Handle inputs.
@@ -477,9 +511,6 @@ function updateHuman(i, dt)
   var keymap = game.racerKeyMap[i];
   var x = i * 2;
   var y = x + 1;
-
-  game.racerAccel[x] = 0.0;
-  game.racerAccel[y] = 0.0;
 
   if (game.keysDown[keymap[0]])
     game.racerAccel[y] += accel;

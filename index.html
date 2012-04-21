@@ -14,7 +14,7 @@
     <!-- My code for this page. -->
     <script type="text/javascript" src="js/main.js"></script>
 
-    <!-- The main drawing vertex shader. -->
+    <!-- The main drawing shader. -->
     <script type="x-shader/x-vertex" id="draw-vs">
       attribute vec2 pos;
       attribute float radius;
@@ -28,12 +28,10 @@
         gl_PointSize = radius * 2.0;
       }
     </script>
-
-    <!-- the main drawing fragment shader. -->
     <script type="x-shader/x-fragment" id="draw-fs">
       precision mediump float;
 
-      uniform vec3 color;
+      uniform vec4 color;
 
       void main()
       {
@@ -42,7 +40,7 @@
         if (lenSqr > 0.25)
           discard;
         float z = sqrt(1.0 - lenSqr);
-        gl_FragColor = vec4(color * z, 1);
+        gl_FragColor = vec4(color.xyz * z, color.w);
       }
     </script>
 
