@@ -14,23 +14,24 @@
     <!-- My code for this page. -->
     <script type="text/javascript" src="js/main.js"></script>
 
-    <!-- Vertex shader. -->
-    <script type="x-shader/x-vertex" id="shader-vs">
-      attribute vec2 vertexPos;
+    <!-- The main drawing vertex shader. -->
+    <script type="x-shader/x-vertex" id="draw-vs">
+      attribute vec2 pos;
+      attribute vec2 vel; // not using this... yet.
 
       uniform mat4 worldToViewportMatrix;
-      uniform float zDepth;
 
       void main()
       {
-        vec4 worldPos = vec4(vertexPos, zDepth, 1);
+        vec2 tmp = vel;
+        vec4 worldPos = vec4(pos, 0.0, 1.0);
         gl_Position = worldToViewportMatrix * worldPos;
         gl_PointSize = 30.0;
       }
     </script>
 
-    <!-- Fragment shader. -->
-    <script type="x-shader/x-fragment" id="shader-fs">
+    <!-- the main drawing fragment shader. -->
+    <script type="x-shader/x-fragment" id="draw-fs">
       precision mediump float;
 
       void main()
@@ -40,25 +41,24 @@
         if (lenSqr > 0.25)
           discard;
         //float z = sqrt(1.0 - lenSqr);
-        //gl_FragColor = vec4(0, 0, z, z);
-        gl_FragColor = vec4(0, 0, 1, 1);
+        gl_FragColor = vec4(0, 0, z, 1);
       }
     </script>
 
     <!-- Post-processing vertex shader. -->
     <script type="x-shader/x-vertex" id="postprocess-vs">
-      attribute vec2 vertexPos;
-      attribute vec2 vertexUV;
+      attribute vec2 pos;
+      attribute vec2 uv;
 
       uniform mat4 worldToViewportMatrix;
 
-      varying vec2 vTexCoords;
+      varying vec2 vUV;
 
       void main()
       {
-        vec4 worldPos = vec4(vertexPos, 0.1, 1.0);
-        gl_Position = /*worldToViewportMatrix * */worldPos;
-        vTexCoords = vertexUV;
+        vec4 worldPos = vec4(pos, 0.0, 1.0);
+        gl_Position = worldToViewportMatrix * worldPos;
+        vUV = uv;
       }
     </script>
 
@@ -66,17 +66,17 @@
     <script type="x-shader/x-fragment" id="postprocess-fs">
       precision mediump float;
 
-      uniform sampler2D texture;
+      uniform sampler2D tex;
       uniform float kernel[25];
       uniform vec2 uvOffset[25];
 
-      varying vec2 vTexCoords;
+      varying vec2 vUV;
 
       void main()
       {
         vec4 total = vec4(0.0, 0.0, 0.0, 1.0);
         for (int i = 0; i < 25; i++) {
-          vec4 tmp = texture2D(texture, vTexCoords + uvOffset[i]);
+          vec4 tmp = texture2D(tex, vUV + uvOffset[i]);
           total += tmp * kernel[i];
         }
         gl_FragColor = total;
@@ -85,19 +85,18 @@
 
     <!-- Text vertex shader. -->
     <script type="x-shader/x-vertex" id="text-vs">
-      attribute vec2 vertexPos;
-      attribute vec2 vertexUV;
+      attribute vec2 pos;
+      attribute vec2 uv;
 
       uniform mat4 worldToViewportMatrix;
-      uniform float zDepth;
 
-      varying vec2 vTexCoords;
+      varying vec2 vUV;
 
       void main()
       {
-        vec4 worldPos = vec4(vertexPos, zDepth, 1);
+        vec4 worldPos = vec4(pos, 1, 1);
         gl_Position = worldToViewportMatrix * worldPos;
-        vTexCoords = vertexUV;
+        vUV = uv;
       }
     </script>
 
@@ -105,20 +104,20 @@
     <script type="x-shader/x-fragment" id="text-fs">
       precision mediump float;
 
-      uniform sampler2D texture;
+      uniform sampler2D tex;
 
-      varying vec2 vTexCoords;
+      varying vec2 vUV;
 
       void main()
       {
-        vec4 texColor = texture2D(texture, vTexCoords);
+        vec4 texColor = texture2D(tex, vUV);
         gl_FragColor = texColor;
       }
     </script>
   </head>
-  <body onload="wtf.main();">
-    <canvas id="wtf-draw-canvas" width="1024" height="512"></canvas>
-    <canvas id="wtf-text-canvas" width="512" height="128" style="display: none;"></canvas>
+  <body onload="SolarSailor.main();">
+    <canvas id="solarsailor-draw-canvas" width="1024" height="512"></canvas>
+    <canvas id="solarsailor-text-canvas" width="512" height="128" style="display: none;"></canvas>
     <hr/>
     <p>Some placeholder text.</p>
   </body>
