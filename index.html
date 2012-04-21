@@ -44,6 +44,54 @@
       }
     </script>
 
+    <!-- Post-processing vertex shader. -->
+    <script type="x-shader/x-vertex" id="postprocess-vs">
+      attribute vec2 vertexPos;
+      attribute vec2 vertexUV;
+
+      uniform mat4 worldToViewportMatrix;
+
+      varying vec2 vTexCoords;
+
+      void main()
+      {
+        vec4 worldPos = vec4(vertexPos, 0.5, 1);
+        gl_Position = worldToViewportMatrix * worldPos;
+        vTexCoords = vertexUV;
+      }
+    </script>
+
+    <!-- Post-processing fragment shader. -->
+    <script type="x-shader/x-fragment" id="postprocess-fs">
+      precision mediump float;
+
+      uniform sampler2D texture;
+      uniform vec2 dUV;
+
+      varying vec2 vTexCoords;
+
+      void main()
+      {
+        vec2 texCoord = vTexCoords;
+
+        vec4 color00 = texture2D(texture, vec2(texCoord.x - dUV.x, texCoord.y - dUV.y));
+        vec4 color01 = texture2D(texture, vec2(texCoord.x,         texCoord.y - dUV.y));
+        vec4 color02 = texture2D(texture, vec2(texCoord.x + dUV.x, texCoord.y - dUV.y));
+        vec4 color10 = texture2D(texture, vec2(texCoord.x - dUV.x, texCoord.y        ));
+        vec4 color11 = texture2D(texture, vec2(texCoord.x,         texCoord.y        ));
+        vec4 color12 = texture2D(texture, vec2(texCoord.x + dUV.x, texCoord.y        ));
+        vec4 color20 = texture2D(texture, vec2(texCoord.x - dUV.x, texCoord.y + dUV.y));
+        vec4 color21 = texture2D(texture, vec2(texCoord.x,         texCoord.y + dUV.y));
+        vec4 color22 = texture2D(texture, vec2(texCoord.x + dUV.x, texCoord.y + dUV.y));
+
+        vec4 vert = -color00 - 2.0 * color10 - color20 + color02 + 2.0 * color12 + color22;
+        vec4 horiz = color00 + 2.0 * color01 + color02 - color20 - 2.0 * color21 - color22;
+
+        vec4 outColor = vert + horiz;
+        gl_FragColor = outColor;
+      }
+    </script>
+
     <!-- Text vertex shader. -->
     <script type="x-shader/x-vertex" id="text-vs">
       attribute vec2 vertexPos;
@@ -78,7 +126,9 @@
     </script>
   </head>
   <body onload="wtf.main();">
-    <canvas id="wtf-draw-canvas" width="800" height="800"></canvas>
+    <canvas id="wtf-draw-canvas" width="1024" height="512"></canvas>
     <canvas id="wtf-text-canvas" width="512" height="128" style="display: none;"></canvas>
+    <hr/>
+    <p>Some placeholder text.</p>
   </body>
 </html>

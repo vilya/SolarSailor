@@ -4,8 +4,8 @@ var wtf = function () {  // start of the wtf namespace
 // Constants
 //
 
-var kParticleZ = 0.1;
-var kOverlayZ = 0.2;
+var kParticleZ = 0.2;
+var kOverlayZ = 0.1;
 
 
 //
@@ -19,7 +19,8 @@ var gl;
 var tl;
 
 // The current shader program.
-var gShaderProgram
+var gShaderProgram;
+var gPostProcessShader;
 var gTextShader;
 
 // Input handling variables.
@@ -194,16 +195,63 @@ function init(drawCanvas, textCanvas)
   ]), gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
+  // Set up som vertex buffers for drawing quads.
+  gl.quadPos = gl.createBuffer();
+  gl.quadUV = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.quadPos);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0.0, 0.0,
+    1.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0
+  ]), gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.quadUV);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0.0, 0.0,
+    1.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0
+  ]), gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
   // Set up some OpenGL state.
   gl.clearColor(0.1, 0.1, 0.1, 1.0);
   gl.cullFace(gl.BACK);
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
 
+  // Set up the render buffers.
+  var fb = gl.createFramebuffer();
+  fb.width = gl.viewportWidth;
+  fb.height = gl.viewportHeight;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  
+  var tex = gl.createTexture(); // creating a texture to use as a render target.
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, fb.width, fb.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+  var rb = gl.createRenderbuffer(); // create a depth buffer to use with the render target.
+  gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, fb.width, fb.height);
+
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.fb = fb;
+  gl.tex = tex;
+
   // Set up the shaders
   gShaderProgram = program("shader-vs", "shader-fs",
       [ "worldToViewportMatrix", "zDepth", "texture" ], // uniforms
       [ "vertexPos" ] );                                // attributes
+  gPostProcessShader = program("postprocess-vs", "postprocess-fs",
+      [ "worldToViewportMatrix", "texture", "dUV" ],    // uniforms
+      [ "vertexPos", "vertexUV" ] );                    // attributes
   gTextShader = program("text-vs", "text-fs",
       [ "worldToViewportMatrix", "zDepth", "texture" ], // uniforms
       [ "vertexPos", "vertexUV" ] );                    // attributes
@@ -244,9 +292,6 @@ function init(drawCanvas, textCanvas)
 
 function draw()
 {
-  gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
   var transform;
   if (gl.cameraMatrix) {
     transform = mat4.identity();
@@ -256,6 +301,12 @@ function draw()
   else {
     transform = gl.projectionMatrix;
   }
+
+  // Bind the framebuffer. We draw into this so we can do some 2D post-processing afterwards.
+  gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fb);
+
+  gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   // Draw the points.
   var world = gl.world;
@@ -281,6 +332,33 @@ function draw()
   gl.bindTexture(gl.TEXTURE_2D, null);
 
   gShaderProgram.disableAttribs();
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  // Finished drawing the points.
+  
+  // Now do the real drawing.
+  gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, gl.tex);
+
+  gl.useProgram(gPostProcessShader);
+  gPostProcessShader.enableAttribs();
+  gl.uniformMatrix4fv(gPostProcessShader.uniforms.worldToViewportMatrix, false, transform);
+
+  gl.uniform1i(gPostProcessShader.uniforms.texture, 0);
+  gl.uniform2f(gPostProcessShader.uniforms.dUV, 1.0 / gl.viewportWidth, 1.0 / gl.viewportHeight);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.quadPos);
+  gl.vertexAttribPointer(gPostProcessShader.attribs['vertexPos'], 2, gl.FLOAT, false, 8, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.quadUV);
+  gl.vertexAttribPointer(gPostProcessShader.attribs['vertexUV'], 2, gl.FLOAT, false, 8, 0);
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gPostProcessShader.disableAttribs();
 
   // Draw the overlay text.
   var frameTime = new Number(Date.now() - world.lastUpdate);
