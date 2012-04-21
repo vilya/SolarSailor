@@ -272,8 +272,8 @@ function init(drawCanvas, textCanvas)
     game.racerNextWaypoint.push(0);
     game.racerSpriteID.push(i);
     game.racerName.push("Player " + (i + 1));
-    game.racerTopSpeed.push(10.0);
-    game.racerTopAccel.push(1.0);
+    game.racerTopSpeed.push(20.0);
+    game.racerTopAccel.push(15.0);
     game.racerIsHuman.push(false);
     game.racerKeyMap.push("\0\0\0\0");
   }
@@ -436,6 +436,9 @@ function updateHuman(i, dt)
   var keymap = game.racerKeyMap[i];
   var x = i * 2;
   var y = x + 1;
+
+  game.racerAccel[x] = 0.0;
+  game.racerAccel[y] = 0.0;
 
   if (game.keysDown[keymap[0]])
     game.racerAccel[y] += accel;
