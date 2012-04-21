@@ -39,8 +39,9 @@
         float lenSqr = dist.x * dist.x + dist.y * dist.y;
         if (lenSqr > 0.25)
           discard;
-        float z = sqrt(1.0 - lenSqr);
-        gl_FragColor = vec4(0, 0, z, z);
+        //float z = sqrt(1.0 - lenSqr);
+        //gl_FragColor = vec4(0, 0, z, z);
+        gl_FragColor = vec4(0, 0, 1, 1);
       }
     </script>
 
@@ -55,7 +56,7 @@
 
       void main()
       {
-        vec4 worldPos = vec4(vertexPos, 0.5, 1);
+        vec4 worldPos = vec4(vertexPos, 0.1, 1.0);
         gl_Position = worldToViewportMatrix * worldPos;
         vTexCoords = vertexUV;
       }
@@ -66,29 +67,19 @@
       precision mediump float;
 
       uniform sampler2D texture;
-      uniform vec2 dUV;
+      uniform float kernel[25];
+      uniform vec2 uvOffset[25];
 
       varying vec2 vTexCoords;
 
       void main()
       {
-        vec2 texCoord = vTexCoords;
-
-        vec4 color00 = texture2D(texture, vec2(texCoord.x - dUV.x, texCoord.y - dUV.y));
-        vec4 color01 = texture2D(texture, vec2(texCoord.x,         texCoord.y - dUV.y));
-        vec4 color02 = texture2D(texture, vec2(texCoord.x + dUV.x, texCoord.y - dUV.y));
-        vec4 color10 = texture2D(texture, vec2(texCoord.x - dUV.x, texCoord.y        ));
-        vec4 color11 = texture2D(texture, vec2(texCoord.x,         texCoord.y        ));
-        vec4 color12 = texture2D(texture, vec2(texCoord.x + dUV.x, texCoord.y        ));
-        vec4 color20 = texture2D(texture, vec2(texCoord.x - dUV.x, texCoord.y + dUV.y));
-        vec4 color21 = texture2D(texture, vec2(texCoord.x,         texCoord.y + dUV.y));
-        vec4 color22 = texture2D(texture, vec2(texCoord.x + dUV.x, texCoord.y + dUV.y));
-
-        vec4 vert = -color00 - 2.0 * color10 - color20 + color02 + 2.0 * color12 + color22;
-        vec4 horiz = color00 + 2.0 * color01 + color02 - color20 - 2.0 * color21 - color22;
-
-        vec4 outColor = vert + horiz;
-        gl_FragColor = outColor;
+        vec4 total = vec4(0.0, 0.0, 0.0, 1.0);
+        for (int i = 0; i < 25; i++) {
+          vec4 tmp = texture2D(texture, vTexCoords + uvOffset[i]);
+          total += tmp * kernel[i];
+        }
+        gl_FragColor = total;
       }
     </script>
 

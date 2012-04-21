@@ -250,11 +250,29 @@ function init(drawCanvas, textCanvas)
       [ "worldToViewportMatrix", "zDepth", "texture" ], // uniforms
       [ "vertexPos" ] );                                // attributes
   gPostProcessShader = program("postprocess-vs", "postprocess-fs",
-      [ "worldToViewportMatrix", "texture", "dUV" ],    // uniforms
+      [ "worldToViewportMatrix", "texture", "kernel", "uvOffset" ],    // uniforms
       [ "vertexPos", "vertexUV" ] );                    // attributes
   gTextShader = program("text-vs", "text-fs",
       [ "worldToViewportMatrix", "zDepth", "texture" ], // uniforms
       [ "vertexPos", "vertexUV" ] );                    // attributes
+
+  // Set up the convolution kernel for our post-processing step.
+  var kernel = [
+    0.0,  0.0, -1.0,  0.0,  0.0,
+    0.0, -1.0, -2.0, -1.0,  0.0,
+   -1.0, -2.0, 16.0, -2.0, -1.0,
+    0.0, -1.0, -2.0, -1.0,  0.0,
+    0.0,  0.0, -1.0,  0.0,  0.0,
+  ];
+  var u = 1.0 / gl.viewportWidth;
+  var v = 1.0 / gl.viewportHeight;
+  var uvOffset = [];
+  for (var r = -2; r <= 2; r++) {
+    for (var c = -2; c <= 2; c++)
+      uvOffset.push(r * v, c * u);
+  }
+  gl.kernel = new Float32Array(kernel);
+  gl.uvOffset = new Float32Array(uvOffset);
 
   // Set up the world.
   var world = {
@@ -304,7 +322,6 @@ function draw()
 
   // Bind the framebuffer. We draw into this so we can do some 2D post-processing afterwards.
   gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fb);
-
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -333,13 +350,14 @@ function draw()
 
   gShaderProgram.disableAttribs();
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  // Finished drawing the points.
-  
   // Now do the real drawing.
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, gl.tex);
 
@@ -348,7 +366,8 @@ function draw()
   gl.uniformMatrix4fv(gPostProcessShader.uniforms.worldToViewportMatrix, false, transform);
 
   gl.uniform1i(gPostProcessShader.uniforms.texture, 0);
-  gl.uniform2f(gPostProcessShader.uniforms.dUV, 1.0 / gl.viewportWidth, 1.0 / gl.viewportHeight);
+  gl.uniform1fv(gPostProcessShader.uniforms.kernel, gl.kernel);
+  gl.uniform2fv(gPostProcessShader.uniforms.uvOffset, gl.uvOffset);
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.quadPos);
   gl.vertexAttribPointer(gPostProcessShader.attribs['vertexPos'], 2, gl.FLOAT, false, 8, 0);
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.quadUV);
@@ -356,6 +375,7 @@ function draw()
 
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+  gl.disable(gl.BLEND);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindTexture(gl.TEXTURE_2D, null);
   gPostProcessShader.disableAttribs();
