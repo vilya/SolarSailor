@@ -303,6 +303,8 @@ function init(drawCanvas, textCanvas)
 
 function draw()
 {
+  var doPostprocessing = document.getElementById('postprocessing').checked;
+
   var transform;
   if (game.cameraMatrix) {
     transform = mat4.identity();
@@ -314,7 +316,8 @@ function draw()
   }
 
   // Bind the framebuffer. We draw into this so we can do some 2D post-processing afterwards.
-  gl.bindFramebuffer(gl.FRAMEBUFFER, game.framebuffer);
+  if (doPostprocessing)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, game.framebuffer);
   gl.viewport(0, 0, game.viewportWidth, game.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -336,33 +339,34 @@ function draw()
   game.drawShader.disableAttribs();
 
   // Unbind the intermediate framebuffer and prepare to do the real drawing.
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.viewport(0, 0, game.viewportWidth, game.viewportHeight);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  if (doPostprocessing) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, game.viewportWidth, game.viewportHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   
-  // Draw the intermediate texture on a screen-size quad, to run the fragment shader over it.
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    // Draw the intermediate texture on a screen-size quad, to run the fragment shader over it.
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, game.frameTexture);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, game.frameTexture);
 
-  gl.useProgram(game.postprocessShader);
-  game.postprocessShader.enableAttribs();
-  gl.uniformMatrix4fv(game.postprocessShader.uniforms['worldToViewportMatrix'], false, transform);
-  gl.uniform1i(game.postprocessShader.uniforms['tex'], 0);
-  gl.uniform1fv(game.postprocessShader.uniforms['kernel'], game.postprocessKernel);
-  gl.uniform2fv(game.postprocessShader.uniforms['uvOffset'], game.postprocessUVOffsets);
-  gl.bindBuffer(gl.ARRAY_BUFFER, game.quadBuf);
-  gl.vertexAttribPointer(game.postprocessShader.attribs['pos'], 2, gl.FLOAT, false, 16, 0);
-  gl.vertexAttribPointer(game.postprocessShader.attribs['uv'], 2, gl.FLOAT, false, 16, 8);
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.useProgram(game.postprocessShader);
+    game.postprocessShader.enableAttribs();
+    gl.uniformMatrix4fv(game.postprocessShader.uniforms['worldToViewportMatrix'], false, transform);
+    gl.uniform1i(game.postprocessShader.uniforms['tex'], 0);
+    gl.uniform1fv(game.postprocessShader.uniforms['kernel'], game.postprocessKernel);
+    gl.uniform2fv(game.postprocessShader.uniforms['uvOffset'], game.postprocessUVOffsets);
+    gl.bindBuffer(gl.ARRAY_BUFFER, game.quadBuf);
+    gl.vertexAttribPointer(game.postprocessShader.attribs['pos'], 2, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribPointer(game.postprocessShader.attribs['uv'], 2, gl.FLOAT, false, 16, 8);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-  gl.disable(gl.BLEND);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  game.postprocessShader.disableAttribs();
-
+    gl.disable(gl.BLEND);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    game.postprocessShader.disableAttribs();
+  }
 /*
   // Draw the overlay text.
   var frameTime = new Number(Date.now() - game.lastUpdate);

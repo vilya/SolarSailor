@@ -41,7 +41,8 @@
         if (lenSqr > 0.25)
           discard;
         //float z = sqrt(1.0 - lenSqr);
-        gl_FragColor = vec4(0, 0, z, 1);
+        //gl_FragColor = vec4(0, 0, z, 1);
+        gl_FragColor = vec4(0, 0, 1, 1);
       }
     </script>
 
@@ -119,6 +120,8 @@
     <canvas id="solarsailor-draw-canvas" width="1024" height="512"></canvas>
     <canvas id="solarsailor-text-canvas" width="512" height="128" style="display: none;"></canvas>
     <hr/>
-    <p>Some placeholder text.</p>
+    <p>
+      <input type="checkbox" id="postprocessing" checked></input>Enable postprocessing
+    </p>
   </body>
 </html>
