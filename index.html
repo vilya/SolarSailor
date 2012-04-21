@@ -17,16 +17,15 @@
     <!-- The main drawing vertex shader. -->
     <script type="x-shader/x-vertex" id="draw-vs">
       attribute vec2 pos;
-      attribute vec2 vel; // not using this... yet.
+      attribute float radius;
 
       uniform mat4 worldToViewportMatrix;
 
       void main()
       {
-        vec2 tmp = vel;
         vec4 worldPos = vec4(pos, 0.0, 1.0);
         gl_Position = worldToViewportMatrix * worldPos;
-        gl_PointSize = 30.0;
+        gl_PointSize = radius * 2.0;
       }
     </script>
 
@@ -34,15 +33,16 @@
     <script type="x-shader/x-fragment" id="draw-fs">
       precision mediump float;
 
+      uniform vec3 color;
+
       void main()
       {
         vec2 dist = vec2(0.5, 0.5) - gl_PointCoord;
         float lenSqr = dist.x * dist.x + dist.y * dist.y;
         if (lenSqr > 0.25)
           discard;
-        //float z = sqrt(1.0 - lenSqr);
-        //gl_FragColor = vec4(0, 0, z, 1);
-        gl_FragColor = vec4(0, 0, 1, 1);
+        float z = sqrt(1.0 - lenSqr);
+        gl_FragColor = vec4(color * z, 1);
       }
     </script>
 
@@ -121,7 +121,7 @@
     <canvas id="solarsailor-text-canvas" width="512" height="128" style="display: none;"></canvas>
     <hr/>
     <p>
-      <input type="checkbox" id="postprocessing" checked></input>Enable postprocessing
+      <input type="checkbox" id="postprocessing"></input>Enable postprocessing
     </p>
   </body>
 </html>
