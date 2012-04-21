@@ -57,7 +57,7 @@
       void main()
       {
         vec4 worldPos = vec4(vertexPos, 0.1, 1.0);
-        gl_Position = worldToViewportMatrix * worldPos;
+        gl_Position = /*worldToViewportMatrix * */worldPos;
         vTexCoords = vertexUV;
       }
     </script>

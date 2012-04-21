@@ -394,6 +394,78 @@ function update()
 
   var dt = (now - world.lastUpdate) / 1000.0; // in seconds
 
+  // Pre-calculation: find the center and average velocity of the swarm.
+  var summedPosX = 0;
+  var summedPosY = 0;
+  var summedVelX = 0;
+  var summedVelY = 0;
+  for (var i = 0; i < end; i += 2) {
+    summedPosX += world.points[i];
+    summedPosY += world.points[i + 1];
+    summedVelX += world.velocities[i];
+    summedVelY += world.velocities[i + 1];
+  }
+
+  var kCenteringRate = 0.1;
+  var kSeparationRate = 0.5;
+  var kVelocityMatchRate = 0.1;
+  var kGoalAttainRate = 0.4;
+  var kMinSeparationX = 10.0 / gl.viewportWidth;
+  var kMinSeparationY = 10.0 / gl.viewportHeight;
+
+  var kMinSeparationSqr = kMinSeparationX * kMinSeparationX + kMinSeparationX * kMinSeparationY;
+
+  var goalX = 0.5;
+  var goalY = 0.5;
+
+  // Apply the flocking rules to each particle.
+  for (var i = 0; i < end; i += 2) {
+    var posX = world.points[i];
+    var posY = world.points[i + 1];
+    var velX = world.velocities[i];
+    var velY = world.velocities[i + 1];
+    var forceX = -velX;
+    var forceY = -velY;
+
+    // Rule 1: particles try to move towards the center of the swarm.
+    var perceivedCenterX = (summedPosX - posX) / (world.vertexCount - 1);
+    var perceivedCenterY = (summedPosY - posY) / (world.vertexCount - 1);
+    forceX += (perceivedCenterX - posX) * kCenteringRate;
+    forceY += (perceivedCenterY - posY) * kCenteringRate;
+
+    // Rule 2: particles try to maintain a minimum separation from each other.
+    var motionAwayX = 0;
+    var motionAwayY = 0;
+    for (var j = 0; j < end; j += 2) {
+      if (j == i)
+        continue;
+
+      var dx = world.points[j] - posX;
+      var dy = world.points[j] - posY;
+      if (dx < kMinSeparationX)
+        motionAwayX -= 2 * dx;
+      if (dy < kMinSeparationY)
+        motionAwayY -= 2 * dy;
+    }
+    forceX += motionAwayX * kSeparationRate;
+    forceY += motionAwayY * kSeparationRate;
+
+    // Rule 3: particles try to match velocity with each other.
+    var perceivedVelocityX = (summedVelX - velX) / (world.vertexCount - 1);
+    var perceivedVelocityY = (summedVelY - velY) / (world.vertexCount - 1);
+    forceX += (perceivedVelocityX - velX) * kVelocityMatchRate;
+    forceY += (perceivedVelocityY - velY) * kVelocityMatchRate;
+
+    // Rule 4: particles try to move towards a common goal.
+    forceX += (goalX - posX) * kGoalAttainRate;
+    forceY += (goalX - posX) * kGoalAttainRate;
+
+    // Apply the force to the velocity for the particle.
+    world.velocities[i] += forceX * dt;
+    world.velocities[i + 1] += forceY * dt;
+  }
+
+  // Update the particle positions.
   for (var i = 0; i < end; i++) {
     world.points[i] += world.velocities[i] * dt;
     if (world.points[i] < 0) {
