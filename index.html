@@ -1,0 +1,84 @@
+<html>
+  <head>
+    <title>Ludum Dare 23</title>
+
+    <!-- Library which provides vector, matrix & quaternion classes. -->
+    <script type="text/javascript" src="js/gl-matrix.js"></script>
+
+    <!-- Library which provides WebGL setup helpers. -->
+    <script type="text/javascript" src="js/webgl-utils.js"></script>
+
+    <!-- Library which provides a seedable random number generator as a replacement for Math.random. -->
+    <script type="text/javascript" src="js/seedrandom.js"></script>
+
+    <!-- My code for this page. -->
+    <script type="text/javascript" src="js/main.js"></script>
+
+    <!-- Vertex shader. -->
+    <script type="x-shader/x-vertex" id="shader-vs">
+      attribute vec2 vertexPos;
+
+      uniform mat4 worldToViewportMatrix;
+      uniform float zDepth;
+
+      void main()
+      {
+        vec4 worldPos = vec4(vertexPos, zDepth, 1);
+        gl_Position = worldToViewportMatrix * worldPos;
+        gl_PointSize = 30.0;
+      }
+    </script>
+
+    <!-- Fragment shader. -->
+    <script type="x-shader/x-fragment" id="shader-fs">
+      precision mediump float;
+
+      void main()
+      {
+        vec2 dist = vec2(0.5, 0.5) - gl_PointCoord;
+        float lenSqr = dist.x * dist.x + dist.y * dist.y;
+        if (lenSqr > 0.25)
+          discard;
+        float z = sqrt(1.0 - lenSqr);
+        gl_FragColor = vec4(0, 0, z, z);
+      }
+    </script>
+
+    <!-- Text vertex shader. -->
+    <script type="x-shader/x-vertex" id="text-vs">
+      attribute vec2 vertexPos;
+      attribute vec2 vertexUV;
+
+      uniform mat4 worldToViewportMatrix;
+      uniform float zDepth;
+
+      varying vec2 vTexCoords;
+
+      void main()
+      {
+        vec4 worldPos = vec4(vertexPos, zDepth, 1);
+        gl_Position = worldToViewportMatrix * worldPos;
+        vTexCoords = vertexUV;
+      }
+    </script>
+
+    <!-- Text fragment shader. -->
+    <script type="x-shader/x-fragment" id="text-fs">
+      precision mediump float;
+
+      uniform sampler2D texture;
+
+      varying vec2 vTexCoords;
+
+      void main()
+      {
+        vec4 texColor = texture2D(texture, vTexCoords);
+        gl_FragColor = texColor;
+      }
+    </script>
+  </head>
+  <body onload="wtf.main();">
+    <canvas id="wtf-draw-canvas" width="800" height="800"></canvas>
+    <canvas id="wtf-text-canvas" width="512" height="128" style="display: none;"></canvas>
+  </body>
+</html>
