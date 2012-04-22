@@ -723,7 +723,39 @@ function updateHuman(i, dt)
 
 function updateAI(i, dt)
 {
-  // TODO
+  var accel = game.racerTopAccel[i] * dt;
+  var x = i * 2;
+  var y = x + 1;
+
+  var posX = game.racerPos[x];
+  var posY = game.racerPos[y];
+  var velX = game.racerVel[x];
+  var velY = game.racerVel[y];
+  var accelX = game.racerAccel[x];
+  var accelY = game.racerAccel[y];
+
+  var targetX = game.racerDest[i * 4 + 2];
+  var targetY = game.racerDest[i * 4 + 3];
+
+  targetX += (Math.random() - 0.5) * accel;
+  targetY += (Math.random() - 0.5) * accel;
+
+  // Strategy is to try to always accelerate directly towards where they think
+  // the next waypoint is.
+  var desiredVelX = targetX - posX;
+  var desiredVelY = targetY - posY;
+  var desiredAccelX = desiredVelX - velX;
+  var desiredAccelY = desiredVelY - velY;
+
+  if (desiredAccelX < 0)
+    game.racerAccel[x] -= accel;
+  else if (desiredAccelX > 0)
+    game.racerAccel[x] += accel;
+
+  if (desiredAccelY < 0)
+    game.racerAccel[y] -= accel;
+  else if (desiredAccelY > 0)
+    game.racerAccel[y] += accel;
 }
 
 
@@ -785,6 +817,8 @@ function updateTitles()
     game.draw = draw;
     game.update = update;
   }
+
+  game.lastUpdate = Date.now();
 }
 
 
