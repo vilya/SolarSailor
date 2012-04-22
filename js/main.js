@@ -24,6 +24,7 @@ var game = {
   'racerPosBuf': null,
   'racerColorBuf': null,
   'racerRadiusBuf': null,
+  'racerDestBuf': null,
   'obstaclePosBuf': null,
   'obstacleColorBuf': null,
   'obstacleRadiusBuf': null,
@@ -49,6 +50,7 @@ var game = {
   'racerRadius': [],        // single float for each racer
   'racerMass': [],          // single float for each racer
   'racerNextWaypoint': [],  // single int for each racer
+  'racerDest': [],       // a pair of x,y values (i.e. 4 values) for each racer.
   'racerColor': [],         // r,g,b,a values for each racer. TODO: replace with texture IDs.
   'racerName': [],          // single string for each racer
   'racerTopSpeed': [],      // single float for each racer
@@ -226,6 +228,7 @@ function init(drawCanvas, textCanvas)
   game.racerPosBuf = gl.createBuffer();
   game.racerRadiusBuf = gl.createBuffer();
   game.racerColorBuf = gl.createBuffer();
+  game.racerDestBuf = gl.createBuffer();
   game.obstaclePosBuf = gl.createBuffer();
   game.obstacleRadiusBuf = gl.createBuffer();
   game.obstacleColorBuf = gl.createBuffer();
@@ -305,6 +308,7 @@ function init(drawCanvas, textCanvas)
     game.racerRadius.push(radius);
     game.racerMass.push(volume * density);
     game.racerNextWaypoint.push(0);
+    game.racerDest.push(0.0, 0.0, 0.0, 0.0);
     game.racerColor.push(0.0, 0.0, 1.0, 1.0);
     game.racerName.push("Player " + (i + 1));
     game.racerTopSpeed.push(20.0);
@@ -323,6 +327,7 @@ function init(drawCanvas, textCanvas)
   game.racerAccel = new Float32Array(game.racerAccel);
   game.racerRadius = new Float32Array(game.racerRadius);
   game.racerMass = new Float32Array(game.racerMass);
+  game.racerDest = new Float32Array(game.racerDest);
   game.racerColor = new Float32Array(game.racerColor);
 
   // Upload initial values for the racer-related vertex buffers to the GPU.
@@ -332,6 +337,8 @@ function init(drawCanvas, textCanvas)
   gl.bufferData(gl.ARRAY_BUFFER, game.racerRadius, gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerColorBuf);
   gl.bufferData(gl.ARRAY_BUFFER, game.racerColor, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.racerDestBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, game.racerDest, gl.DYNAMIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Set up the obstacle data.
@@ -353,7 +360,7 @@ function init(drawCanvas, textCanvas)
   game.obstacleMass = new Float32Array(game.obstacleMass);
   game.obstacleColor = new Float32Array(game.obstacleColor);
 
-  // Upload initial values for the racer-related vertex buffers to the GPU.
+  // Upload initial values for the obstacle-related vertex buffers to the GPU.
   gl.bindBuffer(gl.ARRAY_BUFFER, game.obstaclePosBuf);
   gl.bufferData(gl.ARRAY_BUFFER, game.obstaclePos, gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.obstacleRadiusBuf);
@@ -452,6 +459,12 @@ function draw()
   gl.vertexAttribPointer(game.waypointShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
   gl.drawArrays(gl.POINTS, 0, game.numWaypoints * 2);
   gl.drawArrays(gl.LINES, 0, game.numWaypoints * 2);
+
+  // Draw the next waypoint marker for each of the racers.
+  gl.uniform4f(game.waypointShader.uniforms['color'], 0.5, 0.5, 0.5, 0.75);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.racerDestBuf);
+  gl.vertexAttribPointer(game.waypointShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
+  gl.drawArrays(gl.LINES, 0, game.numRacers * 2);
 
   gl.disable(gl.BLEND);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -556,18 +569,40 @@ function update()
       var scale = game.racerTopSpeed[i] / speed;
       game.racerVel[x] *= scale;
       game.racerVel[y] *= scale;
+      game.racerAccel[x] = 0;
+      game.racerAccel[y] = 0;
     }
-    if (accel > game.racerTopAccel[i]) {
-      var scale = game.racerTopAccel[i] / speed;
+    else if (accel > game.racerTopAccel[i]) {
+      var scale = game.racerTopAccel[i] / accel;
       game.racerAccel[x] *= scale;
       game.racerAccel[y] *= scale;
     }
   }
 
+  // Update the racer position -> next waypoint coords.
+  for (var i = 0; i < game.numRacers; i++) {
+    var outx = i * 4;
+    var outy = outx + 1;
+
+    game.racerDest[outx] = game.racerPos[i * 2];
+    game.racerDest[outy] = game.racerPos[i * 2 + 1];
+
+    var wpx = game.racerNextWaypoint[i] * 4;
+    var wpy = wpx + 1;
+    var x = (game.waypointPos[wpx] + game.waypointPos[wpx + 2]) / 2.0;
+    var y = (game.waypointPos[wpy] + game.waypointPos[wpy + 2]) / 2.0;
+
+    game.racerDest[outx + 2] = x;
+    game.racerDest[outy + 2] = y;
+  }
+
   game.lastUpdate = now;
 
+  // Update the GL buffers.
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerPosBuf);
   gl.bufferSubData(gl.ARRAY_BUFFER, 0, game.racerPos);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.racerDestBuf);
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, game.racerDest);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 
