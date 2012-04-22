@@ -514,6 +514,31 @@ function update()
 
   var dt = (now - game.lastUpdate) / 1000.0; // in seconds
 
+  // Check whether the racers are about to pass through their target waypoint.
+  for (var i = 0; i < game.numRacers; i++) {
+    // A = players current position.
+    var A = vec2.create([ game.racerPos[i * 2], game.racerPos[i * 2 + 1] ]);
+    // B = players position after this timestep.
+    var B = vec2.add(vec2.create([ game.racerVel[i * 2] * dt, game.racerVel[i * 2 + 1] * dt ]), A);
+    // C = left end of the waypoint.
+    var C = vec2.create([ game.waypointPos[game.racerNextWaypoint[i] * 4],
+                          game.waypointPos[game.racerNextWaypoint[i] * 4 + 1] ]);
+    // D = left end of the waypoint.
+    var D = vec2.create([ game.waypointPos[game.racerNextWaypoint[i] * 4 + 2],
+                          game.waypointPos[game.racerNextWaypoint[i] * 4 + 3] ]);
+
+    var V0 = vec2.subtract(D, C);
+    var V1 = vec2.subtract(A, C);
+    var V2 = vec2.subtract(B, C);
+
+    var before = vec2.cross(V0, V1);
+    var after = vec2.cross(V0, V2);
+
+    var throughWaypoint = (before < 0) != (after < 0);
+    if (throughWaypoint)
+      game.racerNextWaypoint[i] = (game.racerNextWaypoint[i] + 1) % game.numWaypoints;
+  }
+
   // Update the racers.
   for (var i = 0; i < end; i++) {
     game.racerPos[i] += game.racerVel[i] * dt;
