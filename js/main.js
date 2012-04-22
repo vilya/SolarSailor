@@ -516,26 +516,28 @@ function update()
 
   // Check whether the racers are about to pass through their target waypoint.
   for (var i = 0; i < game.numRacers; i++) {
-    // A = players current position.
-    var A = vec2.create([ game.racerPos[i * 2], game.racerPos[i * 2 + 1] ]);
-    // B = players position after this timestep.
-    var B = vec2.add(vec2.create([ game.racerVel[i * 2] * dt, game.racerVel[i * 2 + 1] * dt ]), A);
-    // C = left end of the waypoint.
-    var C = vec2.create([ game.waypointPos[game.racerNextWaypoint[i] * 4],
-                          game.waypointPos[game.racerNextWaypoint[i] * 4 + 1] ]);
-    // D = left end of the waypoint.
-    var D = vec2.create([ game.waypointPos[game.racerNextWaypoint[i] * 4 + 2],
-                          game.waypointPos[game.racerNextWaypoint[i] * 4 + 3] ]);
+    // A = players current position, B = players position after this timestep.
+    // C = left end of the waypoint, D = right end of the waypoint.
+    var ax = game.racerPos[i * 2];
+    var bx = game.racerVel[i * 2] * dt;
+    var cx = game.waypointPos[game.racerNextWaypoint[i] * 4];
+    var dx = game.waypointPos[game.racerNextWaypoint[i] * 4 + 2] - cx;
+    var tx = (ax - cx) / (dx - bx);
 
-    var V0 = vec2.subtract(D, C);
-    var V1 = vec2.subtract(A, C);
-    var V2 = vec2.subtract(B, C);
+    var throughWaypoint;
+    if (tx < 0.0 || tx > 1.0) {
+      throughWaypoint = false;
+    }
+    else {
+      var ay = game.racerPos[i * 2 + 1];
+      var by = game.racerVel[i * 2 + 1] * dt;
+      var cy = game.waypointPos[game.racerNextWaypoint[i] * 4 + 1];
+      var dy = game.waypointPos[game.racerNextWaypoint[i] * 4 + 3] - cy;
+      var ty = (ay - cy) / (dy - by);
+      throughWaypoint = (ty >= 0.0 && ty <= 1.0);
+    }
 
-    var before = vec2.cross(V0, V1);
-    var after = vec2.cross(V0, V2);
-
-    var throughWaypoint = (before < 0) != (after < 0);
-    if (throughWaypoint)
+   if (throughWaypoint)
       game.racerNextWaypoint[i] = (game.racerNextWaypoint[i] + 1) % game.numWaypoints;
   }
 
