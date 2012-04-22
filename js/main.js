@@ -465,6 +465,8 @@ function draw()
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerDestBuf);
   gl.vertexAttribPointer(game.waypointShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
   gl.drawArrays(gl.LINES, 0, game.numRacers * 2);
+  gl.vertexAttribPointer(game.waypointShader.attribs['pos'], 2, gl.FLOAT, false, 16, 8);
+  gl.drawArrays(gl.POINTS, 0, game.numRacers);
 
   gl.disable(gl.BLEND);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -610,17 +612,27 @@ function update()
   for (var i = 0; i < game.numRacers; i++) {
     var outx = i * 4;
     var outy = outx + 1;
+    var ax = game.racerPos[i * 2];
+    var ay = game.racerPos[i * 2 + 1];
 
-    game.racerDest[outx] = game.racerPos[i * 2];
-    game.racerDest[outy] = game.racerPos[i * 2 + 1];
+    game.racerDest[outx] = ax;
+    game.racerDest[outy] = ay;
 
     var wpx = game.racerNextWaypoint[i] * 4;
     var wpy = wpx + 1;
-    var x = (game.waypointPos[wpx] + game.waypointPos[wpx + 2]) / 2.0;
-    var y = (game.waypointPos[wpy] + game.waypointPos[wpy + 2]) / 2.0;
+    var bx = (game.waypointPos[wpx] + game.waypointPos[wpx + 2]) / 2.0 - ax;
+    var by = (game.waypointPos[wpy] + game.waypointPos[wpy + 2]) / 2.0 - ay;
 
-    game.racerDest[outx + 2] = x;
-    game.racerDest[outy + 2] = y;
+    var kMaxLength = 0.1;
+    var actualLength = Math.sqrt(bx * bx + by * by);
+    if (actualLength > kMaxLength) {
+      var scale = kMaxLength / actualLength;
+      bx *= scale;
+      by *= scale;
+    }
+
+    game.racerDest[outx + 2] = ax + bx;
+    game.racerDest[outy + 2] = ay + by;
   }
 
   game.lastUpdate = now;
