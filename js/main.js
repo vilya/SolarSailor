@@ -274,21 +274,18 @@ function edgeKernel()
 
 
 function blurKernel() {
-  var kernel = new Float32Array([
-    1.0,  4.0,  7.0,  4.0,  1.0,
-    4.0, 16.0, 26.0, 16.0,  4.0,
-    7.0, 26.0, 41.0, 26.0,  7.0,
-    4.0, 16.0, 26.0, 16.0,  4.0,
-    1.0,  4.0,  7.0,  4.0,  1.0,
-  ]);
+  var sigma = 1.0;
+  var W = 5;
+  var kernel = [];
+  var mean = W / 2.0;
 
-  var total = 0.0;
-  for (var i = 0; i < kernel.length; i++)
-    total += kernel[i];
-
-  for (var i = 0; i < kernel.length; i++)
-    kernel[i] /= total;
-
+  for (var x = 0; x < W; x++) {
+    for (var y = 0; y < W; y++) {
+      var val = Math.exp( -0.5 * (Math.pow((x-mean)/sigma, 2.0) + Math.pow((y-mean)/sigma, 2.0)) )
+                / (2 * Math.PI * sigma * sigma);
+      kernel.push(val);
+    }
+  }
   return kernel;
 }
 
@@ -311,7 +308,7 @@ function init(drawCanvas, textCanvas)
   tl.font = "48px monospace";	// Size of the text and the font family used
 
   // Set up some OpenGL state.
-  gl.clearColor(0.1, 0.1, 0.1, 1.0);
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.cullFace(gl.BACK);
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
@@ -343,9 +340,9 @@ function init(drawCanvas, textCanvas)
   gl.bufferData(gl.ARRAY_BUFFER, square, gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-  // Create the intermediate rendering buffers & textures.
-  addFramebuffer();
-  addFramebuffer();
+  // Create the intermediate rendering buffers & textures. Note that we don't
+  // create the framebuffers yet - they're expensive, so we defer that until
+  // postprocessing is switched on.
   game.textTexture = gl.createTexture();
   game.titleTexture = texture("img/TitleScreen.png");
 
@@ -493,7 +490,7 @@ function drawPlaying()
 
   // Bind the framebuffer. We draw into this so we can do some 2D post-processing afterwards.
   if (doPostprocessing)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, game.framebuffers[0]);
+    initPostprocess();
   gl.viewport(0, 0, game.viewportWidth, game.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -558,9 +555,18 @@ function drawPlaying()
 }
 
 
+function initPostprocess()
+{
+  // Only create the framebuffers when postprocessing is switched on for the first time.
+  while (game.framebuffers.length < 2)
+    addFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, game.framebuffers[0]);
+}
+
+
 function postprocess()
 {
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, game.framebuffers[1]);
   gl.viewport(0, 0, game.viewportWidth, game.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -575,13 +581,23 @@ function postprocess()
   game.postprocessShader.enableAttribs();
   gl.uniformMatrix4fv(game.postprocessShader.uniforms['worldToViewportMatrix'], false, game.projectionMatrix);
   gl.uniform1i(game.postprocessShader.uniforms['tex'], 0);
-  gl.uniform1fv(game.postprocessShader.uniforms['kernel'], game.edgeKernel);
+  gl.uniform1fv(game.postprocessShader.uniforms['kernel'], game.blurKernel);
   gl.uniform2fv(game.postprocessShader.uniforms['uvOffset'], game.postprocessUVOffsets);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.quadBuf);
   gl.vertexAttribPointer(game.postprocessShader.attribs['pos'], 2, gl.FLOAT, false, 16, 0);
   gl.vertexAttribPointer(game.postprocessShader.attribs['uv'], 2, gl.FLOAT, false, 16, 8);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+  gl.disable(gl.DEPTH);
+
+  gl.bindTexture(gl.TEXTURE_2D, game.frameTextures[1]);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.bindTexture(gl.TEXTURE_2D, game.frameTextures[0]);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  gl.enable(gl.DEPTH);
   gl.disable(gl.BLEND);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindTexture(gl.TEXTURE_2D, null);
