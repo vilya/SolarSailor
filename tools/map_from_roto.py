@@ -22,7 +22,6 @@ def exportMap(rotoNodeName='RotoPaint1', pathElemName='Racetrack'):
 
   for cp in path:
     center = cp.center.getPosition(frameNum)
-    #leftTangent = cp.leftTangent.getPosition(frameNum)
     direction = cp.rightTangent.getPosition(frameNum)
 
     cx = center.x / mapSize + tx

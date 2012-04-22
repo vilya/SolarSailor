@@ -70,6 +70,7 @@ var game = {
   // Waypoints
   'numWaypoints': 0,
   'waypointPos': [],        // A pair of x,y coordinates (i.e. 4 values) for each waypoint.
+  'waypointCenter': [],     // x,y values for each waypoint.
 
   'lastUpdate': 0,          // Time we last called game.update().
   'lastStateChange': 0,     // Time we last switched into a new state.
@@ -329,6 +330,7 @@ function init(drawCanvas, textCanvas)
   game.obstacleRadiusBuf = gl.createBuffer();
   game.obstacleColorBuf = gl.createBuffer();
   game.waypointPosBuf = gl.createBuffer();
+  game.waypointCenterBuf = gl.createBuffer();
   var square = new Float32Array([
     // x, y       u, v
     0.0, 0.0,   0.0, 0.0,
@@ -449,6 +451,7 @@ function init(drawCanvas, textCanvas)
   // Set up the waypoint data.
   game.numWaypoints = SolarSailorMap.numWaypoints;
   game.waypointPos = SolarSailorMap.waypointPos;
+  game.waypointCenter = SolarSailorMap.waypointCenter;
   /*
   var kWaypointWidth = 0.15;
   for (var i = 0; i < game.numWaypoints; i++) {
@@ -466,10 +469,13 @@ function init(drawCanvas, textCanvas)
 
   // Convert some waypoint data to typed arrays so it can be passed straight in to WebGL.
   game.waypointPos = new Float32Array(game.waypointPos);
+  game.waypointCenter = new Float32Array(game.waypointCenter);
 
   // Upload values for the waypoint-related vertex buffers to the GPU.
   gl.bindBuffer(gl.ARRAY_BUFFER, game.waypointPosBuf);
   gl.bufferData(gl.ARRAY_BUFFER, game.waypointPos, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.waypointCenterBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, game.waypointCenter, gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Start with a reasonable value for the last update time.
@@ -539,6 +545,12 @@ function drawPlaying()
   gl.vertexAttribPointer(game.waypointShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
   gl.drawArrays(gl.POINTS, 0, game.numWaypoints * 2);
   gl.drawArrays(gl.LINES, 0, game.numWaypoints * 2);
+
+  // Draw the racetrack.
+  gl.uniform4f(game.waypointShader.uniforms['color'], 0.0, 0.0, 0.5, 0.75);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.waypointCenterBuf);
+  gl.vertexAttribPointer(game.waypointShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
+  gl.drawArrays(gl.LINE_LOOP, 0, game.numWaypoints);
 
   // Draw the next waypoint marker for each of the racers.
   gl.uniform4f(game.waypointShader.uniforms['color'], 0.5, 0.5, 0.5, 0.75);
@@ -748,10 +760,10 @@ function updatePlaying()
     game.racerDest[outx] = ax;
     game.racerDest[outy] = ay;
 
-    var wpx = game.racerNextWaypoint[i] * 4;
+    var wpx = game.racerNextWaypoint[i] * 2;
     var wpy = wpx + 1;
-    var bx = (game.waypointPos[wpx] + game.waypointPos[wpx + 2]) / 2.0 - ax;
-    var by = (game.waypointPos[wpy] + game.waypointPos[wpy + 2]) / 2.0 - ay;
+    var bx = game.waypointCenter[wpx] - ax;
+    var by = game.waypointCenter[wpy] - ay;
 
     var kMaxLength = 0.1;
     var actualLength = Math.sqrt(bx * bx + by * by);
