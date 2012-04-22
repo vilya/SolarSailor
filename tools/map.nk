@@ -1,0 +1,133 @@
+#! /Applications/Nuke6.3v5/Nuke6.3v5.app/Contents/MacOS/Nuke6.3v5 -nx
+version 6.3 v5
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="0" y="22" w="1920" h="1174" screen="0">
+        <splitter orientation="1">
+            <split size="1394"/>
+            <splitter orientation="1">
+                <split size="40"/>
+                <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                    <page id="Toolbar.1"/>
+                </dock>
+                <split size="1350"/>
+                <splitter orientation="2">
+                    <split size="1152"/>
+                    <dock id="" activePageId="Viewer.1">
+                        <page id="Viewer.1"/>
+                    </dock>
+                </splitter>
+            </splitter>
+            <split size="522"/>
+            <splitter orientation="2">
+                <split size="574"/>
+                <dock id="" activePageId="Script Editor.1">
+                    <page id="DAG.1"/>
+                    <page id="Script Editor.1"/>
+                </dock>
+                <split size="574"/>
+                <dock id="" activePageId="Properties.1">
+                    <page id="Properties.1"/>
+                </dock>
+            </splitter>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name /Users/vilya/Code/SolarSailor/tools/map.nk
+ format "1024 642 0 0 1024 642 1 "
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+}
+Read {
+ inputs 0
+ file /Users/vilya/Downloads/1024px-Silverstone_Circuit_2010_version.png
+ format "1024 642 0 0 1024 642 1 "
+ origset true
+ name Read1
+ xpos -57
+ ypos -182
+}
+RotoPaint {
+ curves {AnimTree: "" {
+ Version: 1.2
+ Flag: 0
+ RootNode: 1
+ Node: {
+  NodeName: "Root" {
+   Flag: 512
+   NodeType: 1
+   Transform: 0 0 S 0 0 S 0 0 S 0 0 S 0 1 S 0 1 S 0 0 S 0 1024 S 0 778 
+   NumOfAttributes: 11
+   "vis" S 0 1 "opc" S 0 1 "mbo" S 0 1 "mb" S 0 1 "mbs" S 0 0.5 "fo" S 0 1 "fx" S 0 0 "fy" S 0 0 "ff" S 0 1 "ft" S 0 0 "pt" S 0 0 
+  }
+  NumOfChildren: 1
+  Node: {
+   NodeName: "Racetrack" {
+    Flag: 576
+    NodeType: 3
+    CurveGroup: "" {
+     Transform: 0 0 S 1 1 0 S 1 1 0 S 1 1 0 S 1 1 1 S 1 1 1 S 1 1 0 S 1 1 574.731 S 1 1 317.654 
+     Flag: 0
+     NumOfCubicCurves: 2
+     CubicCurve: "" {
+      Type: 0 Flag: 8192 Dim: 2
+      NumOfPoints: 81
+      0 S 1 1 21.0998 S 1 1 -3.435 0 0 S 1 1 300 S 1 1 613 0 0 S 1 1 -43 S 1 1 7 0 0 S 1 1 1 S 1 1 16 0 0 S 1 1 223 S 1 1 565 0 0 S 1 1 -1 S 1 1 -16 0 0 S 1 1 -1 S 1 1 16 0 0 S 1 1 243 S 1 1 538 0 0 S 1 1 1 S 1 1 -16 0 0 S 1 1 13 S 1 1 9 0 0 S 1 1 141 S 1 1 439 0 0 S 1 1 -13 S 1 1 -9 0 0 S 1 1 5 S 1 1 11 0 0 S 1 1 67 S 1 1 388 0 0 S 1 1 -5 S 1 1 -11 0 0 S 1 1 -6 S 1 1 20 0 0 S 1 1 68 S 1 1 342 0 0 S 1 1 10.2805 S 1 1 -34.2682 0 0 S 1 1 -9 S 1 1 7 0 0 S 1 1 450 S 1 1 123 0 0 S 1 1 9 S 1 1 -7 0 0 S 1 1 -7 S 1 1 6 0 0 S 1 1 488 S 1 1 68 0 0 S 1 1 7 S 1 1 -6 0 0 S 1 1 -6 S 1 1 -5 0 0 S 1 1 520 S 1 1 55 0 0 S 1 1 6 S 1 1 5 0 0 S 1 1 -20.3123 S 1 1 -1.84657 0 0 S 1 1 582 S 1 1 87 0 0 S 1 1 22 S 1 1 2 0 0 S 1 1 -15 S 1 1 -3 0 0 S 1 1 667 S 1 1 67 0 0 S 1 1 15 S 1 1 3 0 0 S 1 1 -16.1091 S 1 1 -0.710686 0 0 S 1 1 719 S 1 1 94 0 0 S 1 1 31.28 S 1 1 1.37999 0 0 S 1 1 -54.1328 S 1 1 -8.60825 0 0 S 1 1 861 S 1 1 103 0 0 S 1 1 63.5472 S 1 1 10.1054 0 0 S 1 1 -7.56006 S 1 1 -18.9 0 0 S 1 1 992 S 1 1 153 0 0 S 1 1 14 S 1 1 35 0 0 S 1 1 10.4415 S 1 1 -22.7812 0 0 S 1 1 964 S 1 1 436 0 0 S 1 1 -11 S 1 1 24 0 0 S 1 1 7 S 1 1 -6 0 0 S 1 1 925 S 1 1 479 0 0 S 1 1 -7 S 1 1 6 0 0 S 1 1 17 S 1 1 2 0 0 S 1 1 831 S 1 1 523 0 0 S 1 1 -17 S 1 1 -2 0 0 S 1 1 0 S 1 1 8 0 0 S 1 1 801 S 1 1 500 0 0 S 1 1 0 S 1 1 -8 0 0 S 1 1 -8 S 1 1 1 0 0 S 1 1 816 S 1 1 469 0 0 S 1 1 8 S 1 1 -1 0 0 S 1 1 -7.69409 S 1 1 3.84708 0 0 S 1 1 870 S 1 1 462 0 0 S 1 1 14 S 1 1 -7 0 0 S 1 1 13 S 1 1 19 0 0 S 1 1 877 S 1 1 411 0 0 S 1 1 -13 S 1 1 -19 0 0 S 1 1 21 S 1 1 8 0 0 S 1 1 638 S 1 1 142 0 0 S 1 1 -21 S 1 1 -8 0 0 S 1 1 11 S 1 1 -12 0 0 S 1 1 549 S 1 1 156 0 0 S 1 1 -11 S 1 1 12 0 0 S 1 1 -11 S 1 1 -9 0 0 S 1 1 550 S 1 1 183 0 0 S 1 1 11 S 1 1 9 0 0 S 1 1 0 S 1 1 -18 0 0 S 1 1 610 S 1 1 211 0 0 S 1 1 0 S 1 1 18 0 0 S 1 1 0 S 1 1 -30 0 0 S 1 1 528 S 1 1 329 0 0 S 1 1 -0.000244141 S 1 1 23.0868 0 0 S 1 1 14 S 1 1 -32 0 0 S 1 1 531 S 1 1 446 0 0 S 1 1 -10.6501 S 1 1 24.3429 0 
+     }
+     CubicCurve: "" {
+      Type: 0 Flag: 8192 Dim: 2
+      NumOfPoints: 81
+      0 S 1 1 21.0998 S 1 1 -3.435 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -43 S 1 1 7 0 0 S 1 1 1 S 1 1 16 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -1 S 1 1 -16 0 0 S 1 1 -1 S 1 1 16 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 1 S 1 1 -16 0 0 S 1 1 13 S 1 1 9 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -13 S 1 1 -9 0 0 S 1 1 5 S 1 1 11 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -5 S 1 1 -11 0 0 S 1 1 -6 S 1 1 20 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 10.2805 S 1 1 -34.2682 0 0 S 1 1 -9 S 1 1 7 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 9 S 1 1 -7 0 0 S 1 1 -7 S 1 1 6 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 7 S 1 1 -6 0 0 S 1 1 -6 S 1 1 -5 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 6 S 1 1 5 0 0 S 1 1 -20.3123 S 1 1 -1.84657 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 22 S 1 1 2 0 0 S 1 1 -15 S 1 1 -3 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 15 S 1 1 3 0 0 S 1 1 -16.1091 S 1 1 -0.710686 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 31.28 S 1 1 1.37999 0 0 S 1 1 -54.1328 S 1 1 -8.60825 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 63.5472 S 1 1 10.1054 0 0 S 1 1 -7.56006 S 1 1 -18.9 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 14 S 1 1 35 0 0 S 1 1 10.4415 S 1 1 -22.7812 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -11 S 1 1 24 0 0 S 1 1 7 S 1 1 -6 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -7 S 1 1 6 0 0 S 1 1 17 S 1 1 2 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -17 S 1 1 -2 0 0 S 1 1 0 S 1 1 8 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 0 S 1 1 -8 0 0 S 1 1 -8 S 1 1 1 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 8 S 1 1 -1 0 0 S 1 1 -7.69409 S 1 1 3.84708 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 14 S 1 1 -7 0 0 S 1 1 13 S 1 1 19 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -13 S 1 1 -19 0 0 S 1 1 21 S 1 1 8 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -21 S 1 1 -8 0 0 S 1 1 11 S 1 1 -12 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -11 S 1 1 12 0 0 S 1 1 -11 S 1 1 -9 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 11 S 1 1 9 0 0 S 1 1 0 S 1 1 -18 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 0 S 1 1 18 0 0 S 1 1 0 S 1 1 -30 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -0.000244141 S 1 1 23.0868 0 0 S 1 1 14 S 1 1 -32 0 0 S 1 1 0 S 1 1 0 0 0 S 1 1 -10.6501 S 1 1 24.3429 0 
+     }
+     NumOfAttributes: 44
+     "vis" S 0 1 "r" S 0 1 "g" S 0 1 "b" S 0 1 "a" S 0 1 "ro" S 0 0 "go" S 0 0 "bo" S 0 0 "ao" S 0 0 "opc" S 0 1 "bm" S 0 2 "inv" S 0 0 "mbo" S 0 0 "mb" S 0 1 "mbs" S 0 0.5 "mbsot" S 0 0 "mbso" S 0 0 "fo" S 0 1 "fx" S 0 0 "fy" S 0 0 "ff" S 0 1 "ft" S 0 0 "src" S 0 0 "stx" S 0 0 "sty" S 0 0 "str" S 0 0 "sr" S 0 0 "ssx" S 0 1 "ssy" S 0 1 "ss" S 0 0 "spx" S 0 1024 "spy" S 0 778 "stot" S 0 0 "sto" S 0 0 "sv" S 0 0 "sf" S 0 1 "sb" S 0 1 "nv" S 0 1 "view1" S 0 1 "ltn" S 0 1 "ltm" S 0 1 "ltt" S 0 0 "tt" S 0 4 "pt" S 0 0 
+    }
+   }
+   NumOfChildren: 0
+  }
+ }
+}
+}
+ toolbox {selectAll {
+  { selectAll ssx 1 ssy 1 sf 1 }
+  { selectPoints ssx 1 ssy 1 sf 1 tt 2 }
+  { createBezier ssx 1 ssy 1 sf 1 sb 1 tt 4 }
+  { createBSpline ssx 1 ssy 1 sf 1 sb 1 tt 5 }
+  { createEllipse ssx 1 ssy 1 sf 1 sb 1 }
+  { createRectangle ssx 1 ssy 1 sf 1 sb 1 }
+  { addPoints ssx 1 ssy 1 sf 1 tt 8 }
+  { brush ssx 1 ssy 1 sf 1 sb 1 }
+  { eraser src 2 ssx 1 ssy 1 sf 1 sb 1 }
+  { clone src 1 ssx 1 ssy 1 sf 1 sb 1 }
+  { reveal src 3 ssx 1 ssy 1 sf 1 sb 1 }
+  { dodge src 1 ssx 1 ssy 1 sf 1 sb 1 }
+  { burn src 1 ssx 1 ssy 1 sf 1 sb 1 }
+  { blur src 1 ssx 1 ssy 1 sf 1 sb 1 }
+  { sharpen src 1 ssx 1 ssy 1 sf 1 sb 1 }
+  { smear src 1 ssx 1 ssy 1 sf 1 sb 1 }
+} }
+ toolbar_brush_hardness 0.200000003
+ toolbar_lifetime_type all
+ toolbar_source_transform_scale {1 1}
+ toolbar_source_transform_center {320 240}
+ colorOverlay 0
+ blending_mode multiply
+ lifetime_type "all frames"
+ motionblur_shutter_offset_type centred
+ source_black_outside true
+ createNewTrack {{-1} "-1\t(none)\t-1" "1000\tNew Track Layer\t1000"}
+ name RotoPaint1
+ selected true
+ xpos -55
+ ypos -63
+}
+Viewer {
+ frame 1
+ input_process false
+ name Viewer1
+ xpos -55
+ ypos 84
+}
