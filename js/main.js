@@ -74,7 +74,7 @@ var game = {
   'lastStateChange': 0,     // Time we last switched into a new state.
   'gameStates': {
     'titles':     { 'draw': drawTitles,     'update': updateTitles },
-    'gameSetup':  { 'draw': drawGameSetup,  'update': updateGameSetup },
+    'gameSetup':  { 'draw': drawGameSetup,  'update': updateGameSetup,  'begin': beginGameSetup },
     'countdown':  { 'draw': drawCountdown,  'update': updateCountdown },
     'playing':    { 'draw': drawPlaying,    'update': updatePlaying },
     'win':        { 'draw': drawWin,        'update': updateWin },
@@ -897,6 +897,22 @@ function updateGameSetup()
 }
 
 
+function beginGameSetup()
+{
+  for (var i = 0; i < game.numRacers; i++) {
+    var ix = i * 2;
+    var iy = ix + 1;
+
+    // TODO: reset the racer position to a default value.
+    game.racerVel[ix] = 0.0;
+    game.racerVel[iy] = 0.0;
+    game.racerAccel[ix] = 0.0;
+    game.racerAccel[iy] = 0.0;
+    game.racerNextWaypoint[i] = 0;
+  }
+}
+
+
 function drawCountdown()
 {
   drawPlaying();
@@ -1026,6 +1042,8 @@ function changeGameState(newState)
 
   // Change the state.
   game.currentGameState = newState;
+  if (newState.begin)
+    newState.begin();
 
   // Record the timestamp of the change.
   game.lastStateChange = game.lastUpdate;
