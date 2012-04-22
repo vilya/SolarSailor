@@ -53,7 +53,7 @@ var game = {
   'racerRadius': [],        // single float for each racer
   'racerMass': [],          // single float for each racer
   'racerNextWaypoint': [],  // single int for each racer
-  'racerDest': [],       // a pair of x,y values (i.e. 4 values) for each racer.
+  'racerDest': [],          // a pair of x,y values (i.e. 4 values) for each racer.
   'racerColor': [],         // r,g,b,a values for each racer. TODO: replace with texture IDs.
   'racerName': [],          // single string for each racer
   'racerTopSpeed': [],      // single float for each racer
@@ -763,6 +763,57 @@ function updatePlaying()
     game.racerDest[outx + 2] = ax + bx;
     game.racerDest[outy + 2] = ay + by;
   }
+
+  // Update the camera position.
+  var minX = game.racerPos[0];
+  var maxX = minX;
+  var minY = game.racerPos[1];
+  var maxY = minY;
+  for (var i = 1; i < game.numRacers && game.racerIsHuman[i]; i++) {
+    var x = game.racerPos[i * 2];
+    var y = game.racerPos[i * 2 + 1];
+    
+    if (x < minX)
+      minX = x;
+    else if (x > maxX)
+      maxX = x;
+
+    if (y < minY)
+      minY = y;
+    else if (y > maxY)
+      maxY = y;
+  }
+  var bboxCenterX = (maxX + minX) / 2.0;
+  var bboxCenterY = (maxY + minY) / 2.0;
+  var bboxSize = Math.max(maxX - minX, maxY - minY) * 1.5;
+  if (bboxSize < 0.5)
+    bboxSize = 0.5;
+  else if (bboxSize > 1.0)
+    bboxSize = 1.0;
+
+  var left = bboxCenterX - bboxSize / 2.0;
+  var right = bboxCenterX + bboxSize / 2.0;
+  var top = bboxCenterY + bboxSize / 2.0;
+  var bottom = bboxCenterY - bboxSize / 2.0;
+
+  if (left < 0.0) {
+    left = 0.0;
+    right = bboxSize;
+  }
+  else if (right > 1.0) {
+    right = 1.0;
+    left = 1.0 - bboxSize;
+  }
+
+  if (bottom < 0.0) {
+    bottom = 0.0;
+    top = bboxSize;
+  }
+  else if (top > 1.0) {
+    top = 1.0;
+    bottom = 1.0 - bboxSize;
+  }
+  game.projectionMatrixPlaying = mat4.ortho(left, right, bottom, top, 10.0, -10.0);
 
   game.lastUpdate = now;
 
