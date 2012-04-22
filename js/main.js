@@ -79,7 +79,7 @@ var game = {
     'playing':    { 'draw': drawPlaying,    'update': updatePlaying },
     //'win':        { 'draw': drawWin,        'update': updateWin },
     //'lose':       { 'draw': drawLose,       'update': updateLose },
-    //'paused':     { 'draw': drawPaused,     'update': updatePaused },
+    'paused':     { 'draw': drawPaused,     'update': updatePaused },
   },
   'currentGameState': null,
 
