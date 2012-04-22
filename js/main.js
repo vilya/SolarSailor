@@ -57,7 +57,7 @@ var game = {
   'racerTopSpeed': [],      // single float for each racer
   'racerTopAccel': [],      // single float for each racer
   'racerIsHuman': [],       // single bool for each racer
-  'racerKeyMap': [],        // keys, in order, for: up, down, left, right (e.g. "WSAD" for standard keys).
+  'racerKeyMap': [],        // single string for each racer. Gives the keys, in order, for: up, down, left, right (e.g. "WSAD" for standard keys).
 
   // Obstacles
   'numObstacles': 0,
@@ -70,12 +70,20 @@ var game = {
   'numWaypoints': 0,
   'waypointPos': [],        // A pair of x,y coordinates (i.e. 4 values) for each waypoint.
 
-  'lastUpdate': 0,
+  'lastUpdate': 0,          // Time we last called game.update().
+  'lastStateChange': 0,     // Time we last switched into a new state.
+  'gameStates': {
+    'titles':     { 'draw': drawTitles,     'update': updateTitles },
+    'gameSetup':  { 'draw': drawGameSetup,  'update': updateGameSetup },
+    'countdown':  { 'draw': drawCountdown,  'update': updateCountdown },
+    'playing':    { 'draw': drawPlaying,    'update': updatePlaying },
+    //'win':        { 'draw': drawWin,        'update': updateWin },
+    //'lose':       { 'draw': drawLose,       'update': updateLose },
+    //'paused':     { 'draw': drawPaused,     'update': updatePaused },
+  },
+  'currentGameState': null,
 
   'keysDown': {},
-
-  'draw': drawTitles,
-  'update': updateTitles,
 };
 
 
@@ -274,6 +282,7 @@ function init(drawCanvas, textCanvas)
   gl.cullFace(gl.BACK);
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
+  gl.depthFunc(gl.LEQUAL);
 
   // Set the viewport dimensions.
   game.viewportWidth = drawCanvas.width;
@@ -449,7 +458,7 @@ function init(drawCanvas, textCanvas)
 }
 
 
-function draw()
+function drawPlaying()
 {
   var doPostprocessing = document.getElementById('postprocessing').checked;
 
@@ -561,7 +570,7 @@ function postprocess()
 }
 
 
-function update()
+function updatePlaying()
 {
   var end = game.numRacers * 2;
   var now = Date.now();
@@ -636,14 +645,12 @@ function update()
 
   // Handle inputs.
   if (game.keysDown[27]) { // 27 == the Esc key.
-    game.draw = drawTitles;
-    game.update = updateTitles;
-    game.keysDown[27] = false;
+    changeGameState(game.gameStates.gameSetup);
+    return;
   }
   else if (game.keysDown[" "]) {
-    game.draw = drawPaused;
-    game.update = updatePaused;
-    game.keysDown[" "] = false;
+    changeGameState(game.gameStates.paused);
+    return;
   }
 
   for (var i = 0; i < game.numRacers; i++) {
@@ -819,33 +826,120 @@ function drawTitles()
 function updateTitles()
 {
   // Press space to start...
-  if (game.keysDown[" "]) {
-    game.draw = draw;
-    game.update = update;
-    game.keysDown[" "] = false;
+  if (game.keysDown[" "])
+    changeGameState(game.gameStates.gameSetup);
+}
+
+
+function drawGameSetup()
+{
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  
+  var numPlayers = 0;
+  for (var i = 0; i < game.numRacers && game.racerIsHuman[i]; i++)
+    numPlayers++;
+
+  text(0.5, 0.5, 36, "# players: " + numPlayers);
+  text(0.5, 0.4, 18, "push <up> or <down> to change, <space> to start game");
+  if (numPlayers > 0)
+    text(0.5, 0.3, 18, "P1 controls: " + game.racerKeyMap[0]);
+  if (numPlayers > 1)
+    text(0.5, 0.2, 18, "P2 controls: " + game.racerKeyMap[1]);
+}
+
+
+function updateGameSetup()
+{
+  game.lastUpdate = Date.now();
+
+  var numPlayers = 0;
+  for (var i = 0; i < game.numRacers && game.racerIsHuman[i]; i++)
+    numPlayers++;
+
+  if (game.keysDown[38] && numPlayers < 2) { // Up arrow
+    game.racerIsHuman[numPlayers] = true;
+    numPlayers++;
+    clearKeyboard();
+  }
+  if (game.keysDown[40] && numPlayers > 0) { // Down arrow
+    numPlayers--;
+    game.racerIsHuman[numPlayers] = false;
+    clearKeyboard();
   }
 
+  if (game.keysDown[" "])
+    changeGameState(game.gameStates.countdown);
+  else if (game.keysDown[27])
+    changeGameState(game.gameStates.titles);
+}
+
+
+function drawCountdown()
+{
+  drawPlaying();
+
+  var dt = Math.floor(3.999 - (game.lastUpdate - game.lastStateChange) / 1000.0);
+  var str;
+  if (dt == 0)
+    str = "go!!!";
+  else
+    str = new Number(dt).toFixed(0);
+
+  if (dt >= 0)
+    text(0.5, 0.25, 48, str);
+}
+
+
+function updateCountdown()
+{
   game.lastUpdate = Date.now();
+
+  if (game.keysDown[27]) { // Escape key
+    changeGameState(game.gameStates.gameSetup);
+    return;
+  }
+
+  var dt = Math.floor(3.999 - (game.lastUpdate - game.lastStateChange) / 1000.0);
+  if (dt < 0)
+    changeGameState(game.gameStates.playing);
 }
 
 
 function drawPaused()
 {
-  draw();
+  drawPlaying();
   text(0.5, 0.25, 36, "press <space> to continue");
 }
 
 
 function updatePaused()
 {
-  // Press space to unpause...
-  if (game.keysDown[" "]) {
-    game.draw = draw;
-    game.update = update;
-    game.keysDown[" "] = false;
-  }
-
   game.lastUpdate = Date.now();
+
+  // Press space to unpause...
+  if (game.keysDown[" "])
+    changeGameState(game.gameStates.playing);
+}
+
+
+function clearKeyboard()
+{
+  // Clear the keyboard state.
+  for (key in game.keysDown)
+    game.keysDown[key] = false;
+}
+
+
+function changeGameState(newState)
+{
+  game.lastUpdate = Date.now();
+  clearKeyboard();
+
+  // Change the state.
+  game.currentGameState = newState;
+
+  // Record the timestamp of the change.
+  game.lastStateChange = game.lastUpdate;
 }
 
 
@@ -893,8 +987,10 @@ function main(drawCanvasId, textCanvasId)
 
   tick = function () {
     window.requestAnimFrame(tick);
-    game.draw();
-    game.update();
+    if (game.currentGameState == null)
+      game.currentGameState = game.gameStates.titles;
+    game.currentGameState.draw();
+    game.currentGameState.update();
   }
   tick();
 }
