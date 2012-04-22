@@ -16,7 +16,7 @@ def exportMap(rotoNodeName='RotoPaint1', pathElemName='Racetrack'):
   tx = (mapSize - mapWidth) / (2 * mapSize)
   ty = (mapSize - mapHeight) / (2 * mapSize)
 
-  numWaypoints = len(path)
+  numWaypoints = len(path) + 1  # The extra 1 is because we duplicate the starting waypoint.
   waypointCenter = []
   waypointPos = []
 
@@ -37,16 +37,21 @@ def exportMap(rotoNodeName='RotoPaint1', pathElemName='Racetrack'):
     waypointCenter.append( (cx, cy) )
     waypointPos.append( (perpPos0[0], perpPos0[1], perpPos1[0], perpPos1[1]) )
 
+  # We deliberately duplicate the first waypoint here, to make it a closed
+  # loop without need to add special cases in the game.
   with open("/Users/vilya/Code/SolarSailor/js/map.js", "w") as f:
+    print >> f, "// Auto-generated, don't edit directly"
     print >> f, "var SolarSailorMap = {"
     print >> f, "  'numWaypoints': %d," % numWaypoints
     print >> f, "  'waypointPos': ["
     for wp in waypointPos:
       print >> f, "    %f, %f, %f, %f," % wp
+    print >> f, "    %f, %f, %f, %f," % waypointPos[0]
     print >> f, "  ],"
     print >> f, "  'waypointCenter': ["
-    for wp in waypointCenter:
-      print >> f, "    %f, %f," % wp
+    for wc in waypointCenter:
+      print >> f, "    %f, %f," % wc
+    print >> f, "    %f, %f," % waypointCenter[0]
     print >> f, "  ],"
     print >> f, "};"
 

@@ -452,20 +452,6 @@ function init(drawCanvas, textCanvas)
   game.numWaypoints = SolarSailorMap.numWaypoints;
   game.waypointPos = SolarSailorMap.waypointPos;
   game.waypointCenter = SolarSailorMap.waypointCenter;
-  /*
-  var kWaypointWidth = 0.15;
-  for (var i = 0; i < game.numWaypoints; i++) {
-    var x1 = Math.random();
-    var y1 = Math.random();
-
-    var angle = radians(Math.random() * 360.0);
-
-    var x2 = x1 + Math.cos(angle) * kWaypointWidth;
-    var y2 = y1 + Math.sin(angle) * kWaypointWidth;
-
-    game.waypointPos.push(x1, y1, x2, y2);
-  }
-  */
 
   // Convert some waypoint data to typed arrays so it can be passed straight in to WebGL.
   game.waypointPos = new Float32Array(game.waypointPos);
@@ -550,7 +536,7 @@ function drawPlaying()
   gl.uniform4f(game.waypointShader.uniforms['color'], 0.0, 0.0, 0.5, 0.75);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.waypointCenterBuf);
   gl.vertexAttribPointer(game.waypointShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
-  gl.drawArrays(gl.LINE_LOOP, 0, game.numWaypoints);
+  gl.drawArrays(gl.LINE_STRIP, 0, game.numWaypoints);
 
   // Draw the next waypoint marker for each of the racers.
   gl.uniform4f(game.waypointShader.uniforms['color'], 0.5, 0.5, 0.5, 0.75);
