@@ -162,14 +162,34 @@ function texture(textureURL)
 }
 
 
-function text(x, y, message)
+function text(x, y, size, message)
 {
-  // Figure out the size we need the canvas to be.
-  //var textSize = ctx.measureText(message);
+  tl.font = size + "px Tahoma";
 
   tl.clearRect(0, 0, tl.canvas.width, tl.canvas.height);
-  tl.fillText(message, x, y);
+  tl.fillText(message, 0, 0);
 
+  var tlx_to_vpx = tl.canvas.width / game.viewportWidth;
+  var tly_to_vpy = tl.canvas.height / game.viewportHeight;
+
+  var textSize = tl.measureText(message);
+  var tw = textSize.width / tl.canvas.width;
+  var th = size / tl.canvas.height;
+  var tx = x - tw * tlx_to_vpx / 2.0;
+  var ty = y + th * tly_to_vpy / 2.0;
+
+  var transform;
+  if (game.cameraMatrix) {
+    transform = mat4.identity();
+    mat4.inverse(game.cameraMatrix, transform);
+    mat4.multiply(game.projectionMatrix, transform, transform);
+  }
+  else {
+    transform = game.projectionMatrix;
+  }
+  mat4.translate(transform, [tx, ty, -1.0]);
+  mat4.scale(transform, [tlx_to_vpx, tly_to_vpy, 1.0]);
+  
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, game.textTexture);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -184,7 +204,7 @@ function text(x, y, message)
 
   gl.useProgram(game.textShader);
   game.textShader.enableAttribs();
-  gl.uniformMatrix4fv(game.textShader.uniforms['worldToViewportMatrix'], false, game.projectionMatrix);
+  gl.uniformMatrix4fv(game.textShader.uniforms['worldToViewportMatrix'], false, transform);
   gl.uniform1i(game.textShader.uniforms['tex'], 0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.quadBuf);
   gl.vertexAttribPointer(game.textShader.attribs['pos'], 2, gl.FLOAT, false, 16, 0);
@@ -244,7 +264,7 @@ function init(drawCanvas, textCanvas)
 
   // Set up a canvas to use as an intermediate texture for text rendering.
   tl = textCanvas.getContext('2d');
-  tl.fillStyle = "#CC0000";   // The text colour, can take a hex or rgba value (e.g. rgba(255,0,0,0.5))
+  tl.fillStyle = "#AAAACC";   // The text colour, can take a hex or rgba value (e.g. rgba(255,0,0,0.5))
   tl.textAlign = "left";      // Text alignment, e.g. left, center, right
   tl.textBaseline = "top";	  // Baseline of the text, e.g. top, middle, bottom
   tl.font = "48px monospace";	// Size of the text and the font family used
@@ -720,14 +740,10 @@ function drawTitles()
   }
 
   if (game.titleTexture.isLoaded) {
-    var w = game.titleTexture.image.width;
-    var h = game.titleTexture.image.height;
-    w = w / game.viewportWidth;
-    h = h / game.viewportHeight;
-
+    var w = game.titleTexture.image.width / game.viewportWidth;
+    var h = game.titleTexture.image.height / game.viewportHeight;
     var dx = (1.0 - w) / 2.0;
     var dy = (1.0 - h) / 2.0;
-
     mat4.translate(transform, [dx, dy, 0.0]);
     mat4.scale(transform, [w, h, 1.0]);
   }
@@ -756,6 +772,9 @@ function drawTitles()
   gl.bindTexture(gl.TEXTURE_2D, null);
 
   game.textShader.disableAttribs();
+
+  // Draw some text too.
+  text(0.5, 0.25, 24, "press <space> to start");
 }
 
 
