@@ -33,6 +33,7 @@ var game = {
   'framebuffer': null,
   'frameTexture': null,
   'textTexture': null,
+  'titleTexture': null,
 
   'drawShader': null,
   'waypointShader': null,
@@ -72,6 +73,9 @@ var game = {
   'lastUpdate': 0,
 
   'keysDown': {},
+
+  'draw': drawTitles,
+  'update': updateTitles,
 };
 
 
@@ -282,6 +286,7 @@ function init(drawCanvas, textCanvas)
   game.frameTexture = gl.createTexture(); // creating a texture to use as a render target.
   var rb = gl.createRenderbuffer(); // create a depth buffer to use with the render target.
   game.textTexture = gl.createTexture();
+  game.titleTexture = texture("img/TitleScreen.png");
 
   // Initialise the intermediate buffers.
   gl.bindFramebuffer(gl.FRAMEBUFFER, game.framebuffer);
@@ -500,39 +505,39 @@ function draw()
   game.waypointShader.disableAttribs();
 
   // Unbind the intermediate framebuffer and prepare to do the real drawing.
-  if (doPostprocessing) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, game.viewportWidth, game.viewportHeight);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  
-    // Draw the intermediate texture on a screen-size quad, to run the fragment shader over it.
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  if (doPostprocessing)
+    postprocess();
+}
 
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, game.frameTexture);
 
-    gl.useProgram(game.postprocessShader);
-    game.postprocessShader.enableAttribs();
-    gl.uniformMatrix4fv(game.postprocessShader.uniforms['worldToViewportMatrix'], false, transform);
-    gl.uniform1i(game.postprocessShader.uniforms['tex'], 0);
-    gl.uniform1fv(game.postprocessShader.uniforms['kernel'], game.postprocessKernel);
-    gl.uniform2fv(game.postprocessShader.uniforms['uvOffset'], game.postprocessUVOffsets);
-    gl.bindBuffer(gl.ARRAY_BUFFER, game.quadBuf);
-    gl.vertexAttribPointer(game.postprocessShader.attribs['pos'], 2, gl.FLOAT, false, 16, 0);
-    gl.vertexAttribPointer(game.postprocessShader.attribs['uv'], 2, gl.FLOAT, false, 16, 8);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+function postprocess()
+{
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, game.viewportWidth, game.viewportHeight);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    gl.disable(gl.BLEND);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    game.postprocessShader.disableAttribs();
-  }
-/*
-  // Draw the overlay text.
-  var frameTime = new Number(Date.now() - game.lastUpdate);
-  text(1, 1, "Frame time: " + frameTime.toFixed(0) + " ms");
-*/
+  // Draw the intermediate texture on a screen-size quad, to run the fragment shader over it.
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, game.frameTexture);
+
+  gl.useProgram(game.postprocessShader);
+  game.postprocessShader.enableAttribs();
+  gl.uniformMatrix4fv(game.postprocessShader.uniforms['worldToViewportMatrix'], false, transform);
+  gl.uniform1i(game.postprocessShader.uniforms['tex'], 0);
+  gl.uniform1fv(game.postprocessShader.uniforms['kernel'], game.postprocessKernel);
+  gl.uniform2fv(game.postprocessShader.uniforms['uvOffset'], game.postprocessUVOffsets);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.quadBuf);
+  gl.vertexAttribPointer(game.postprocessShader.attribs['pos'], 2, gl.FLOAT, false, 16, 0);
+  gl.vertexAttribPointer(game.postprocessShader.attribs['uv'], 2, gl.FLOAT, false, 16, 8);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  gl.disable(gl.BLEND);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  game.postprocessShader.disableAttribs();
 }
 
 
@@ -697,6 +702,68 @@ function updateAI(i, dt)
 }
 
 
+function drawTitles()
+{
+  var transform;
+  if (game.cameraMatrix) {
+    transform = mat4.identity();
+    mat4.inverse(game.cameraMatrix, transform);
+    mat4.multiply(game.projectionMatrix, transform, transform);
+  }
+  else {
+    transform = game.projectionMatrix;
+  }
+
+  if (game.titleTexture.isLoaded) {
+    var w = game.titleTexture.image.width;
+    var h = game.titleTexture.image.height;
+    w = w / game.viewportWidth;
+    h = h / game.viewportHeight;
+
+    var dx = (1.0 - w) / 2.0;
+    var dy = (1.0 - h) / 2.0;
+
+    mat4.translate(transform, [dx, dy, 0.0]);
+    mat4.scale(transform, [w, h, 1.0]);
+  }
+
+  gl.viewport(0, 0, game.viewportWidth, game.viewportHeight);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  // Draw the title screen texture.
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, game.titleTexture);
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  gl.useProgram(game.textShader);
+  game.textShader.enableAttribs();
+  gl.uniformMatrix4fv(game.textShader.uniforms['worldToViewportMatrix'], false, transform);
+  gl.uniform1i(game.textShader.uniforms['tex'], 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.quadBuf);
+  gl.vertexAttribPointer(game.textShader.attribs['pos'], 2, gl.FLOAT, false, 16, 0);
+  gl.vertexAttribPointer(game.textShader.attribs['uv'], 2, gl.FLOAT, false, 16, 8);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  gl.disable(gl.BLEND);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+
+  game.textShader.disableAttribs();
+}
+
+
+function updateTitles()
+{
+  // Press space to start...
+  if (game.keysDown[" "]) {
+    game.draw = draw;
+    game.update = update;
+  }
+}
+
+
 function keyDown(event)
 {
   game.keysDown[event.keyCode] = true;
@@ -741,8 +808,8 @@ function main(drawCanvasId, textCanvasId)
 
   tick = function () {
     window.requestAnimFrame(tick);
-    draw();
-    update();
+    game.draw();
+    game.update();
   }
   tick();
 }
