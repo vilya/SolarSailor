@@ -77,8 +77,8 @@ var game = {
     'gameSetup':  { 'draw': drawGameSetup,  'update': updateGameSetup },
     'countdown':  { 'draw': drawCountdown,  'update': updateCountdown },
     'playing':    { 'draw': drawPlaying,    'update': updatePlaying },
-    //'win':        { 'draw': drawWin,        'update': updateWin },
-    //'lose':       { 'draw': drawLose,       'update': updateLose },
+    'win':        { 'draw': drawWin,        'update': updateWin },
+    'lose':       { 'draw': drawLose,       'update': updateLose },
     'paused':     { 'draw': drawPaused,     'update': updatePaused },
   },
   'currentGameState': null,
@@ -902,6 +902,50 @@ function updateCountdown()
   var dt = Math.floor(3.999 - (game.lastUpdate - game.lastStateChange) / 1000.0);
   if (dt < 0)
     changeGameState(game.gameStates.playing);
+}
+
+
+function drawWin()
+{
+  drawPlaying();
+  text(0.5, 0.25, 48, "you win!");
+  text(0.5, 0.15, 24, "press <space> to continue");
+}
+
+
+function updateWin()
+{
+  game.lastUpdate = Date.now();
+
+  var dt = (game.lastUpdate - game.lastStateChange) / 1000.0;
+  var showFor = 5.0; // Time to show the message for, in seconds.
+
+  if (game.keysDown[" "] || game.keysDown[27] || dt > showFor) {
+    changeGameState(game.gameState.titles);
+    return;
+  }
+}
+
+
+function drawLose()
+{
+  drawPlaying();
+  text(0.5, 0.25, 48, "you lose!");
+  text(0.5, 0.15, 24, "press <space> to continue");
+}
+
+
+function updateLose()
+{
+  game.lastUpdate = Date.now();
+
+  var dt = (game.lastUpdate - game.lastStateChange) / 1000.0;
+  var showFor = 5.0; // Time to show the message for, in seconds.
+
+  if (game.keysDown[" "] || game.keysDown[27] || dt > showFor) {
+    changeGameState(game.gameState.titles);
+    return;
+  }
 }
 
 
