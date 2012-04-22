@@ -30,8 +30,8 @@ var game = {
   'obstacleRadiusBuf': null,
   'waypointPosBuf': null,
 
-  'framebuffer': null,
-  'frameTexture': null,
+  'framebuffers': [],
+  'frameTextures': [],
   'textTexture': null,
   'titleTexture': null,
 
@@ -40,7 +40,8 @@ var game = {
   'postprocessShader': null,
   'textShader': null,
   
-  'postprocessKernel': null,
+  'edgeKernel': null,
+  'blurKernel': null,
   'postprocessUVOffsets': null,
 
   // Racers
@@ -168,6 +169,37 @@ function texture(textureURL)
   };
   tex.image.src = textureURL;
   return tex;
+}
+
+
+function addFramebuffer()
+{
+  // Create the intermediate rendering buffers & textures.
+  var fb = gl.createFramebuffer();
+  var tex = gl.createTexture(); // creating a texture to use as a render target.
+  var depth = gl.createRenderbuffer(); // create a depth buffer to use with the render target.
+  game.framebuffers.push(fb);
+  game.frameTextures.push(tex);
+
+  // Set up the target texture.
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, game.viewportWidth, game.viewportHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+  // Set up the depth buffer.
+  gl.bindRenderbuffer(gl.RENDERBUFFER, depth);
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, game.viewportWidth, game.viewportHeight);
+
+  // Bind them to the framebuffer.
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth);
+
+  // Clean up.
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
 
@@ -312,25 +344,10 @@ function init(drawCanvas, textCanvas)
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Create the intermediate rendering buffers & textures.
-  game.framebuffer = gl.createFramebuffer();
-  game.frameTexture = gl.createTexture(); // creating a texture to use as a render target.
-  var rb = gl.createRenderbuffer(); // create a depth buffer to use with the render target.
+  addFramebuffer();
+  addFramebuffer();
   game.textTexture = gl.createTexture();
   game.titleTexture = texture("img/TitleScreen.png");
-
-  // Initialise the intermediate buffers.
-  gl.bindFramebuffer(gl.FRAMEBUFFER, game.framebuffer);
-  gl.bindTexture(gl.TEXTURE_2D, game.frameTexture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, game.viewportWidth, game.viewportHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
-  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, game.viewportWidth, game.viewportHeight);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, game.frameTexture, 0);
-  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
   // Set up the shaders
   game.drawShader = program("draw-vs", "draw-fs",
@@ -347,7 +364,8 @@ function init(drawCanvas, textCanvas)
       [ "pos", "uv" ] );                  // attributes
 
   // Set up the parameters for our post-processing step.
-  game.postprocessKernel = blurKernel();
+  game.edgeKernel = edgeKernel();
+  game.blurKernel = blurKernel();
   var u = 1.0 / game.viewportWidth;
   var v = 1.0 / game.viewportHeight;
   var uvOffset = [];
@@ -475,7 +493,7 @@ function drawPlaying()
 
   // Bind the framebuffer. We draw into this so we can do some 2D post-processing afterwards.
   if (doPostprocessing)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, game.framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, game.framebuffers[0]);
   gl.viewport(0, 0, game.viewportWidth, game.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -551,13 +569,13 @@ function postprocess()
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, game.frameTexture);
+  gl.bindTexture(gl.TEXTURE_2D, game.frameTextures[0]);
 
   gl.useProgram(game.postprocessShader);
   game.postprocessShader.enableAttribs();
   gl.uniformMatrix4fv(game.postprocessShader.uniforms['worldToViewportMatrix'], false, game.projectionMatrix);
   gl.uniform1i(game.postprocessShader.uniforms['tex'], 0);
-  gl.uniform1fv(game.postprocessShader.uniforms['kernel'], game.postprocessKernel);
+  gl.uniform1fv(game.postprocessShader.uniforms['kernel'], game.edgeKernel);
   gl.uniform2fv(game.postprocessShader.uniforms['uvOffset'], game.postprocessUVOffsets);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.quadBuf);
   gl.vertexAttribPointer(game.postprocessShader.attribs['pos'], 2, gl.FLOAT, false, 16, 0);
