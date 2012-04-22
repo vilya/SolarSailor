@@ -79,6 +79,7 @@ var game = {
     'playing':    { 'draw': drawPlaying,    'update': updatePlaying },
     'win':        { 'draw': drawWin,        'update': updateWin },
     'lose':       { 'draw': drawLose,       'update': updateLose },
+    'tie':        { 'draw': drawTie,        'update': updateTie },
     'paused':     { 'draw': drawPaused,     'update': updatePaused },
   },
   'currentGameState': null,
@@ -576,6 +577,10 @@ function updatePlaying()
   var now = Date.now();
 
   var dt = (now - game.lastUpdate) / 1000.0; // in seconds
+  if (dt > 0.25)
+    dt = 0.25;
+
+  var finished = [];
 
   // Check whether the racers are about to pass through their target waypoint.
   for (var i = 0; i < game.numRacers; i++) {
@@ -600,8 +605,26 @@ function updatePlaying()
       throughWaypoint = (ty >= 0.0 && ty <= 1.0);
     }
 
-   if (throughWaypoint)
-      game.racerNextWaypoint[i] = (game.racerNextWaypoint[i] + 1) % game.numWaypoints;
+    if (throughWaypoint) {
+      game.racerNextWaypoint[i]++;
+      if (game.racerNextWaypoint[i] >= game.numWaypoints) {
+        finished.push(i);
+        game.racerNextWaypoint[i] = 0;
+      }
+    }
+  }
+
+  if (finished.length > 1) {
+    changeGameState(game.gameStates.tie);
+    return;
+  }
+  else if (finished.length == 1) {
+    // Check whether it was a player or an NPC that won.
+    if (game.racerIsHuman[finished[0]])
+      changeGameState(game.gameStates.win);
+    else
+      changeGameState(game.gameStates.lose);
+    return;
   }
 
   // Update the racers.
@@ -819,7 +842,7 @@ function drawTitles()
   game.textShader.disableAttribs();
 
   // Draw some text too.
-  text(0.5, 0.25, 24, "press <space> to start");
+  text(0.5, 0.10, 24, "press <space> to start");
 }
 
 
@@ -921,7 +944,7 @@ function updateWin()
   var showFor = 5.0; // Time to show the message for, in seconds.
 
   if (game.keysDown[" "] || game.keysDown[27] || dt > showFor) {
-    changeGameState(game.gameState.titles);
+    changeGameState(game.gameStates.titles);
     return;
   }
 }
@@ -943,7 +966,29 @@ function updateLose()
   var showFor = 5.0; // Time to show the message for, in seconds.
 
   if (game.keysDown[" "] || game.keysDown[27] || dt > showFor) {
-    changeGameState(game.gameState.titles);
+    changeGameState(game.gameStates.titles);
+    return;
+  }
+}
+
+
+function drawTie()
+{
+  drawPlaying();
+  text(0.5, 0.25, 48, "it's a tie!");
+  text(0.5, 0.15, 24, "press <space> to continue");
+}
+
+
+function updateTie()
+{
+  game.lastUpdate = Date.now();
+
+  var dt = (game.lastUpdate - game.lastStateChange) / 1000.0;
+  var showFor = 5.0; // Time to show the message for, in seconds.
+
+  if (game.keysDown[" "] || game.keysDown[27] || dt > showFor) {
+    changeGameState(game.gameStates.titles);
     return;
   }
 }
