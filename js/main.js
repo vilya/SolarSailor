@@ -22,8 +22,10 @@ var game = {
   'quadBuf': null,
   'circleBuf': null,
   'racerPosBuf': null,
+  'racerColorBuf': null,
   'racerRadiusBuf': null,
   'obstaclePosBuf': null,
+  'obstacleColorBuf': null,
   'obstacleRadiusBuf': null,
 
   'framebuffer': null,
@@ -44,7 +46,7 @@ var game = {
   'racerRadius': [],        // single float for each racer
   'racerMass': [],          // single float for each racer
   'racerNextWaypoint': [],  // single int for each racer
-  'racerSpriteID': [],      // single int for each racer
+  'racerColor': [],         // r,g,b,a values for each racer. TODO: replace with texture IDs.
   'racerName': [],          // single string for each racer
   'racerTopSpeed': [],      // single float for each racer
   'racerTopAccel': [],      // single float for each racer
@@ -55,6 +57,7 @@ var game = {
   'obstaclePos': [],
   'obstacleRadius': [],
   'obstacleMass': [],
+  'obstacleColor': [],
 
   'lastUpdate': 0,
 
@@ -66,7 +69,7 @@ var game = {
 // Constants
 //
 
-var kG = 667.2; // Newton's gravitational constant, G.
+var kG = 66.72; // Newton's gravitational constant, G.
 
 
 //
@@ -214,8 +217,10 @@ function init(drawCanvas, textCanvas)
   game.circleBuf = gl.createBuffer();
   game.racerPosBuf = gl.createBuffer();
   game.racerRadiusBuf = gl.createBuffer();
+  game.racerColorBuf = gl.createBuffer();
   game.obstaclePosBuf = gl.createBuffer();
   game.obstacleRadiusBuf = gl.createBuffer();
+  game.obstacleColorBuf = gl.createBuffer();
   var square = new Float32Array([
     // x, y       u, v
     0.0, 0.0,   0.0, 0.0,
@@ -250,7 +255,7 @@ function init(drawCanvas, textCanvas)
   // Set up the shaders
   game.drawShader = program("draw-vs", "draw-fs",
       [ "worldToViewportMatrix", "color" ], // uniforms
-      [ "pos", "radius" ] );                // attributes
+      [ "pos", "color", "radius" ] );                // attributes
   game.postprocessShader = program("postprocess-vs", "postprocess-fs",
       [ "worldToViewportMatrix", "tex", "kernel", "uvOffset" ], // uniforms
       [ "pos", "uv" ] );                                        // attributes
@@ -288,7 +293,7 @@ function init(drawCanvas, textCanvas)
     game.racerRadius.push(radius);
     game.racerMass.push(volume * density);
     game.racerNextWaypoint.push(0);
-    game.racerSpriteID.push(i);
+    game.racerColor.push(0.0, 0.0, 1.0, 1.0);
     game.racerName.push("Player " + (i + 1));
     game.racerTopSpeed.push(20.0);
     game.racerTopAccel.push(15.0);
@@ -297,8 +302,8 @@ function init(drawCanvas, textCanvas)
   }
   game.racerKeyMap[0] = "WSAD";
   game.racerKeyMap[1] = "IKJL";
-
   game.racerIsHuman[0] = true; // I am, honest!
+  game.racerColor.splice(0, 4, 1, 0, 0, 1);
 
   // Convert some racer data to typed arrays so it can be passed straight in to WebGL.
   game.racerPos = new Float32Array(game.racerPos);
@@ -306,12 +311,15 @@ function init(drawCanvas, textCanvas)
   game.racerAccel = new Float32Array(game.racerAccel);
   game.racerRadius = new Float32Array(game.racerRadius);
   game.racerMass = new Float32Array(game.racerMass);
+  game.racerColor = new Float32Array(game.racerColor);
 
   // Upload initial values for the racer-related vertex buffers to the GPU.
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerPosBuf);
   gl.bufferData(gl.ARRAY_BUFFER, game.racerPos, gl.DYNAMIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerRadiusBuf);
-  gl.bufferData(gl.ARRAY_BUFFER, game.racerRadius, gl.DYNAMIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, game.racerRadius, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.racerColorBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, game.racerColor, gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Set up the obstacle data.
@@ -324,18 +332,22 @@ function init(drawCanvas, textCanvas)
     game.obstaclePos.push(Math.random(), Math.random());
     game.obstacleRadius.push(radius);
     game.obstacleMass.push(volume * density);
+    game.obstacleColor.push(0.435, 0.220, 0.0, 1.0);
   }
  
   // Convert some obstacle data to typed arrays so it can be passed straight in to WebGL.
   game.obstaclePos = new Float32Array(game.obstaclePos);
   game.obstacleRadius = new Float32Array(game.obstacleRadius);
   game.obstacleMass = new Float32Array(game.obstacleMass);
+  game.obstacleColor = new Float32Array(game.obstacleColor);
 
   // Upload initial values for the racer-related vertex buffers to the GPU.
   gl.bindBuffer(gl.ARRAY_BUFFER, game.obstaclePosBuf);
   gl.bufferData(gl.ARRAY_BUFFER, game.obstaclePos, gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.obstacleRadiusBuf);
   gl.bufferData(gl.ARRAY_BUFFER, game.obstacleRadius, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.obstacleColorBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, game.obstacleColor, gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Start with a reasonable value for the last update time.
@@ -371,19 +383,21 @@ function draw()
   game.drawShader.enableAttribs();
   gl.uniformMatrix4fv(game.drawShader.uniforms['worldToViewportMatrix'], false, transform);
 
-  gl.uniform4f(game.drawShader.uniforms['color'], 0.0, 0.0, 1.0, 1.0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerPosBuf);
   gl.vertexAttribPointer(game.drawShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerRadiusBuf);
   gl.vertexAttribPointer(game.drawShader.attribs['radius'], 1, gl.FLOAT, false, 4, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.racerColorBuf);
+  gl.vertexAttribPointer(game.drawShader.attribs['color'], 4, gl.FLOAT, false, 16, 0);
   gl.drawArrays(gl.POINTS, 0, game.numRacers);
 
   // Draw the obstacles, using the same shader 
-  gl.uniform4f(game.drawShader.uniforms['color'], 0.435, 0.220, 0.0, 1.0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.obstaclePosBuf);
   gl.vertexAttribPointer(game.drawShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.obstacleRadiusBuf);
   gl.vertexAttribPointer(game.drawShader.attribs['radius'], 1, gl.FLOAT, false, 4, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.obstacleColorBuf);
+  gl.vertexAttribPointer(game.drawShader.attribs['color'], 4, gl.FLOAT, false, 16, 0);
   gl.drawArrays(gl.POINTS, 0, game.numObstacles);
 
   gl.disable(gl.BLEND);

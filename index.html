@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Ludum Dare 23</title>
+    <title>Solar Sailor</title>
 
     <!-- Library which provides vector, matrix & quaternion classes. -->
     <script type="text/javascript" src="js/gl-matrix.js"></script>
@@ -17,21 +17,27 @@
     <!-- The main drawing shader. -->
     <script type="x-shader/x-vertex" id="draw-vs">
       attribute vec2 pos;
+      attribute vec4 color;
       attribute float radius;
 
       uniform mat4 worldToViewportMatrix;
+
+      varying vec4 vColor;
 
       void main()
       {
         vec4 worldPos = vec4(pos, 0.0, 1.0);
         gl_Position = worldToViewportMatrix * worldPos;
         gl_PointSize = radius * 2.0;
+        vColor = color;
       }
     </script>
     <script type="x-shader/x-fragment" id="draw-fs">
       precision mediump float;
 
-      uniform vec4 color;
+      //uniform vec4 color;
+
+      varying vec4 vColor;
 
       void main()
       {
@@ -40,7 +46,8 @@
         if (lenSqr > 0.25)
           discard;
         float z = sqrt(1.0 - lenSqr);
-        gl_FragColor = vec4(color.xyz * z, color.w);
+        //gl_FragColor = vec4(color.xyz * z, color.w);
+        gl_FragColor = vec4(vColor.xyz * z, vColor.w);
       }
     </script>
 
