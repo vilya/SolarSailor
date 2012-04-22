@@ -16,6 +16,7 @@ var game = {
   'viewportHeight': -1,
 
   'projectionMatrix': mat4.ortho(0.0, 1.0, 0.0, 1.0, 10.0, -10.0),
+  'projectionMatrixPlaying': mat4.ortho(0.0, 1.0, 0.0, 1.0, 10.0, -10.0),
   'cameraMatrix': mat4.translate(mat4.identity(), [0.0, 0.0, 5.0]),
   'targetDistance': 5.0,
 
@@ -78,7 +79,7 @@ var game = {
     'titles':     { 'draw': drawTitles,     'update': updateTitles },
     'gameSetup':  { 'draw': drawGameSetup,  'update': updateGameSetup,  'begin': beginGameSetup },
     'countdown':  { 'draw': drawCountdown,  'update': updateCountdown },
-    'playing':    { 'draw': drawPlaying,    'update': updatePlaying },
+    'playing':    { 'draw': drawPlaying,    'update': updatePlaying,    'begin': beginPlaying },
     'win':        { 'draw': drawWin,        'update': updateWin },
     'lose':       { 'draw': drawLose,       'update': updateLose },
     'tie':        { 'draw': drawTie,        'update': updateTie },
@@ -477,7 +478,7 @@ function drawPlaying()
   if (game.cameraMatrix) {
     transform = mat4.identity();
     mat4.inverse(game.cameraMatrix, transform);
-    mat4.multiply(game.projectionMatrix, transform, transform);
+    mat4.multiply(game.projectionMatrixPlaying, transform, transform);
   }
   else {
     transform = game.projectionMatrix;
@@ -830,6 +831,19 @@ function updateAI(i, dt)
 }
 
 
+function beginPlaying()
+{
+  var t = 0.5;
+
+  var left = 0;
+  var right = left + t;
+  var bottom = 1.0 - t;
+  var top = bottom + t;
+  
+  game.projectionMatrixPlaying = mat4.ortho(left, right, bottom, top, 10.0, -10.0);
+}
+
+
 function drawTitles()
 {
   var transform;
@@ -934,6 +948,9 @@ function updateGameSetup()
 
 function beginGameSetup()
 {
+  // We'll zoom this in during the countdown to the regular playing size.
+  game.projectionMatrixPlaying = mat4.ortho(0.0, 1.0, 0.0, 1.0, 10.0, -10.0);
+
   for (var i = 0; i < game.numRacers; i++) {
     var ix = i * 2;
     var iy = ix + 1;
@@ -969,9 +986,10 @@ function beginGameSetup()
 
 function drawCountdown()
 {
+  var dt = Math.floor(3.999 - (game.lastUpdate - game.lastStateChange) / 1000.0);
+
   drawPlaying();
 
-  var dt = Math.floor(3.999 - (game.lastUpdate - game.lastStateChange) / 1000.0);
   var str;
   if (dt == 0)
     str = "go!!!";
@@ -992,9 +1010,18 @@ function updateCountdown()
     return;
   }
 
-  var dt = Math.floor(3.999 - (game.lastUpdate - game.lastStateChange) / 1000.0);
+  var dt = 3.999 - (game.lastUpdate - game.lastStateChange) / 1000.0;
   if (dt < 0)
     changeGameState(game.gameStates.playing);
+
+  var t = dt / 8.0 + 0.5;
+
+  var left = 0;
+  var right = left + t;
+  var bottom = 1.0 - t;
+  var top = 1.0;
+  
+  game.projectionMatrixPlaying = mat4.ortho(left, right, bottom, top, 10.0, -10.0);
 }
 
 
