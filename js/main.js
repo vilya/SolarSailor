@@ -447,7 +447,9 @@ function init(drawCanvas, textCanvas)
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Set up the waypoint data.
-  game.numWaypoints = 4;
+  game.numWaypoints = SolarSailorMap.numWaypoints;
+  game.waypointPos = SolarSailorMap.waypointPos;
+  /*
   var kWaypointWidth = 0.15;
   for (var i = 0; i < game.numWaypoints; i++) {
     var x1 = Math.random();
@@ -460,6 +462,7 @@ function init(drawCanvas, textCanvas)
 
     game.waypointPos.push(x1, y1, x2, y2);
   }
+  */
 
   // Convert some waypoint data to typed arrays so it can be passed straight in to WebGL.
   game.waypointPos = new Float32Array(game.waypointPos);
