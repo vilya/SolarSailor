@@ -938,13 +938,32 @@ function beginGameSetup()
     var ix = i * 2;
     var iy = ix + 1;
 
-    // TODO: reset the racer position to a default value.
+    game.racerPos[ix] = game.waypointCenter[0] + 0.2;
+    game.racerPos[iy] = game.waypointCenter[1] + (Math.random() - 0.5) * 0.3;
+
+    if (game.racerPos[ix] > 1.0)
+      game.racerPos[ix] = 2.0 - game.racerPos[ix];
+    else if (game.racerPos[ix] < 0)
+      game.racerPos[ix] = -game.racerPos[ix];
+
+    if (game.racerPos[iy] > 1.0)
+      game.racerPos[iy] = 2.0 - game.racerPos[iy];
+    else if (game.racerPos[iy] < 0)
+      game.racerPos[iy] = -game.racerPos[iy];
+
     game.racerVel[ix] = 0.0;
     game.racerVel[iy] = 0.0;
     game.racerAccel[ix] = 0.0;
     game.racerAccel[iy] = 0.0;
     game.racerNextWaypoint[i] = 0;
   }
+
+  // Update the GL buffers.
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.racerPosBuf);
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, game.racerPos);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.racerDestBuf);
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, game.racerDest);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 
 
