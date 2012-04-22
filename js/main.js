@@ -615,6 +615,11 @@ function update()
   }
 
   // Handle inputs.
+  if (game.keysDown[27]) { // 27 == the Esc key.
+    game.draw = drawTitles;
+    game.update = updateTitles;
+  }
+
   for (var i = 0; i < game.numRacers; i++) {
     if (game.racerIsHuman[i])
       updateHuman(i, dt);
