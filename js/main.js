@@ -638,6 +638,12 @@ function update()
   if (game.keysDown[27]) { // 27 == the Esc key.
     game.draw = drawTitles;
     game.update = updateTitles;
+    game.keysDown[27] = false;
+  }
+  else if (game.keysDown[" "]) {
+    game.draw = drawPaused;
+    game.update = updatePaused;
+    game.keysDown[" "] = false;
   }
 
   for (var i = 0; i < game.numRacers; i++) {
@@ -816,6 +822,27 @@ function updateTitles()
   if (game.keysDown[" "]) {
     game.draw = draw;
     game.update = update;
+    game.keysDown[" "] = false;
+  }
+
+  game.lastUpdate = Date.now();
+}
+
+
+function drawPaused()
+{
+  draw();
+  text(0.5, 0.25, 36, "press <space> to continue");
+}
+
+
+function updatePaused()
+{
+  // Press space to unpause...
+  if (game.keysDown[" "]) {
+    game.draw = draw;
+    game.update = update;
+    game.keysDown[" "] = false;
   }
 
   game.lastUpdate = Date.now();
