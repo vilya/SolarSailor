@@ -555,7 +555,7 @@ function postprocess()
 
   gl.useProgram(game.postprocessShader);
   game.postprocessShader.enableAttribs();
-  gl.uniformMatrix4fv(game.postprocessShader.uniforms['worldToViewportMatrix'], false, transform);
+  gl.uniformMatrix4fv(game.postprocessShader.uniforms['worldToViewportMatrix'], false, game.projectionMatrix);
   gl.uniform1i(game.postprocessShader.uniforms['tex'], 0);
   gl.uniform1fv(game.postprocessShader.uniforms['kernel'], game.postprocessKernel);
   gl.uniform2fv(game.postprocessShader.uniforms['uvOffset'], game.postprocessUVOffsets);
