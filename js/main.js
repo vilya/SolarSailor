@@ -195,6 +195,39 @@ function text(x, y, message)
 }
 
 
+function edgeKernel()
+{
+  var kernel = new Float32Array([
+    0.0,  0.0, -1.0,  0.0,  0.0,
+    0.0, -1.0, -2.0, -1.0,  0.0,
+   -1.0, -2.0, 16.0, -2.0, -1.0,
+    0.0, -1.0, -2.0, -1.0,  0.0,
+    0.0,  0.0, -1.0,  0.0,  0.0,
+  ]);
+  return kernel;
+}
+
+
+function blurKernel() {
+  var kernel = new Float32Array([
+    1.0,  4.0,  7.0,  4.0,  1.0,
+    4.0, 16.0, 26.0, 16.0,  4.0,
+    7.0, 26.0, 41.0, 26.0,  7.0,
+    4.0, 16.0, 26.0, 16.0,  4.0,
+    1.0,  4.0,  7.0,  4.0,  1.0,
+  ]);
+
+  var total = 0.0;
+  for (var i = 0; i < kernel.length; i++)
+    total += kernel[i];
+
+  for (var i = 0; i < kernel.length; i++)
+    kernel[i] /= total;
+
+  return kernel;
+}
+
+
 function init(drawCanvas, textCanvas)
 {
   // Initialise the random number generator.
@@ -279,13 +312,7 @@ function init(drawCanvas, textCanvas)
       [ "pos", "uv" ] );                  // attributes
 
   // Set up the parameters for our post-processing step.
-  game.postprocessKernel = new Float32Array([
-    0.0,  0.0, -1.0,  0.0,  0.0,
-    0.0, -1.0, -2.0, -1.0,  0.0,
-   -1.0, -2.0, 16.0, -2.0, -1.0,
-    0.0, -1.0, -2.0, -1.0,  0.0,
-    0.0,  0.0, -1.0,  0.0,  0.0,
-  ]);
+  game.postprocessKernel = blurKernel();
   var u = 1.0 / game.viewportWidth;
   var v = 1.0 / game.viewportHeight;
   var uvOffset = [];
