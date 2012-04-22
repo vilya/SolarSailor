@@ -35,8 +35,6 @@
     <script type="x-shader/x-fragment" id="draw-fs">
       precision mediump float;
 
-      //uniform vec4 color;
-
       varying vec4 vColor;
 
       void main()
@@ -46,12 +44,35 @@
         if (lenSqr > 0.25)
           discard;
         float z = sqrt(1.0 - lenSqr);
-        //gl_FragColor = vec4(color.xyz * z, color.w);
         gl_FragColor = vec4(vColor.xyz * z, vColor.w);
       }
     </script>
 
-    <!-- Post-processing vertex shader. -->
+    <!-- Waypoint shader. -->
+    <script type="x-shader/x-vertex" id="waypoint-vs">
+      attribute vec2 pos;
+
+      uniform mat4 worldToViewportMatrix;
+
+      void main()
+      {
+        vec4 worldPos = vec4(pos, 0.0, 1.0);
+        gl_Position = worldToViewportMatrix * worldPos;
+        gl_PointSize = 5.0;
+      }
+    </script>
+    <script type="x-shader/x-fragment" id="waypoint-fs">
+      precision mediump float;
+
+      uniform vec4 color;
+
+      void main()
+      {
+        gl_FragColor = color;
+      }
+    </script>
+
+    <!-- Post-processing shader. -->
     <script type="x-shader/x-vertex" id="postprocess-vs">
       attribute vec2 pos;
       attribute vec2 uv;
@@ -67,8 +88,6 @@
         vUV = uv;
       }
     </script>
-
-    <!-- Post-processing fragment shader. -->
     <script type="x-shader/x-fragment" id="postprocess-fs">
       precision mediump float;
 
@@ -89,7 +108,7 @@
       }
     </script>
 
-    <!-- Text vertex shader. -->
+    <!-- Text shader. -->
     <script type="x-shader/x-vertex" id="text-vs">
       attribute vec2 pos;
       attribute vec2 uv;
@@ -105,8 +124,6 @@
         vUV = uv;
       }
     </script>
-
-    <!-- Text fragment shader. -->
     <script type="x-shader/x-fragment" id="text-fs">
       precision mediump float;
 

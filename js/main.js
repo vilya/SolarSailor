@@ -27,18 +27,21 @@ var game = {
   'obstaclePosBuf': null,
   'obstacleColorBuf': null,
   'obstacleRadiusBuf': null,
+  'waypointPosBuf': null,
 
   'framebuffer': null,
   'frameTexture': null,
   'textTexture': null,
 
   'drawShader': null,
+  'waypointShader': null,
   'postprocessShader': null,
   'textShader': null,
   
   'postprocessKernel': null,
   'postprocessUVOffsets': null,
 
+  // Racers
   'numRacers': 0,
   'racerPos': [],           // x,y values for each racer.
   'racerVel': [],           // x,y values for each racer
@@ -51,13 +54,18 @@ var game = {
   'racerTopSpeed': [],      // single float for each racer
   'racerTopAccel': [],      // single float for each racer
   'racerIsHuman': [],       // single bool for each racer
-  'racerKeyMap': [], // keys, in order, for: up, down, left, right (e.g. "WSAD" for standard keys).
+  'racerKeyMap': [],        // keys, in order, for: up, down, left, right (e.g. "WSAD" for standard keys).
 
+  // Obstacles
   'numObstacles': 0,
   'obstaclePos': [],
   'obstacleRadius': [],
   'obstacleMass': [],
   'obstacleColor': [],
+
+  // Waypoints
+  'numWaypoints': 0,
+  'waypointPos': [],        // A pair of x,y coordinates (i.e. 4 values) for each waypoint.
 
   'lastUpdate': 0,
 
@@ -69,7 +77,7 @@ var game = {
 // Constants
 //
 
-var kG = 66.72; // Newton's gravitational constant, G.
+var kG = 66.72; // Newton's gravitational constant, G. Or a variant thereof :-)
 
 
 //
@@ -221,6 +229,7 @@ function init(drawCanvas, textCanvas)
   game.obstaclePosBuf = gl.createBuffer();
   game.obstacleRadiusBuf = gl.createBuffer();
   game.obstacleColorBuf = gl.createBuffer();
+  game.waypointPosBuf = gl.createBuffer();
   var square = new Float32Array([
     // x, y       u, v
     0.0, 0.0,   0.0, 0.0,
@@ -255,7 +264,10 @@ function init(drawCanvas, textCanvas)
   // Set up the shaders
   game.drawShader = program("draw-vs", "draw-fs",
       [ "worldToViewportMatrix", "color" ], // uniforms
-      [ "pos", "color", "radius" ] );                // attributes
+      [ "pos", "color", "radius" ] );       // attributes
+  game.waypointShader = program("waypoint-vs", "waypoint-fs",
+      [ "worldToViewportMatrix", "color" ], // uniforms
+      [ "pos" ] );                          // attributes
   game.postprocessShader = program("postprocess-vs", "postprocess-fs",
       [ "worldToViewportMatrix", "tex", "kernel", "uvOffset" ], // uniforms
       [ "pos", "uv" ] );                                        // attributes
@@ -350,6 +362,29 @@ function init(drawCanvas, textCanvas)
   gl.bufferData(gl.ARRAY_BUFFER, game.obstacleColor, gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
+  // Set up the waypoint data.
+  game.numWaypoints = 4;
+  var kWaypointWidth = 0.15;
+  for (var i = 0; i < game.numWaypoints; i++) {
+    var x1 = Math.random();
+    var y1 = Math.random();
+
+    var angle = radians(Math.random() * 360.0);
+
+    var x2 = x1 + Math.cos(angle) * kWaypointWidth;
+    var y2 = y1 + Math.sin(angle) * kWaypointWidth;
+
+    game.waypointPos.push(x1, y1, x2, y2);
+  }
+
+  // Convert some waypoint data to typed arrays so it can be passed straight in to WebGL.
+  game.waypointPos = new Float32Array(game.waypointPos);
+
+  // Upload values for the waypoint-related vertex buffers to the GPU.
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.waypointPosBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, game.waypointPos, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
   // Start with a reasonable value for the last update time.
   game.lastUpdate = Date.now();
 }
@@ -403,6 +438,24 @@ function draw()
   gl.disable(gl.BLEND);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   game.drawShader.disableAttribs();
+
+  // Draw the waypoints.
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  gl.useProgram(game.waypointShader);
+  game.waypointShader.enableAttribs();
+  gl.uniformMatrix4fv(game.waypointShader.uniforms['worldToViewportMatrix'], false, transform);
+
+  gl.uniform4f(game.waypointShader.uniforms['color'], 1.0, 1.0, 0.0, 0.75);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.waypointPosBuf);
+  gl.vertexAttribPointer(game.waypointShader.attribs['pos'], 2, gl.FLOAT, false, 8, 0);
+  gl.drawArrays(gl.POINTS, 0, game.numWaypoints * 2);
+  gl.drawArrays(gl.LINES, 0, game.numWaypoints * 2);
+
+  gl.disable(gl.BLEND);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  game.waypointShader.disableAttribs();
 
   // Unbind the intermediate framebuffer and prepare to do the real drawing.
   if (doPostprocessing) {
