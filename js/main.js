@@ -767,55 +767,7 @@ function updatePlaying()
   }
 
   // Update the camera position.
-  var minX = game.racerPos[0];
-  var maxX = minX;
-  var minY = game.racerPos[1];
-  var maxY = minY;
-  for (var i = 1; i < game.numRacers && game.racerIsHuman[i]; i++) {
-    var x = game.racerPos[i * 2];
-    var y = game.racerPos[i * 2 + 1];
-    
-    if (x < minX)
-      minX = x;
-    else if (x > maxX)
-      maxX = x;
-
-    if (y < minY)
-      minY = y;
-    else if (y > maxY)
-      maxY = y;
-  }
-  var bboxCenterX = (maxX + minX) / 2.0;
-  var bboxCenterY = (maxY + minY) / 2.0;
-  var bboxSize = Math.max(maxX - minX, maxY - minY) * 1.5;
-  if (bboxSize < 0.5)
-    bboxSize = 0.5;
-  else if (bboxSize > 1.0)
-    bboxSize = 1.0;
-
-  var left = bboxCenterX - bboxSize / 2.0;
-  var right = bboxCenterX + bboxSize / 2.0;
-  var top = bboxCenterY + bboxSize / 2.0;
-  var bottom = bboxCenterY - bboxSize / 2.0;
-
-  if (left < 0.0) {
-    left = 0.0;
-    right = bboxSize;
-  }
-  else if (right > 1.0) {
-    right = 1.0;
-    left = 1.0 - bboxSize;
-  }
-
-  if (bottom < 0.0) {
-    bottom = 0.0;
-    top = bboxSize;
-  }
-  else if (top > 1.0) {
-    top = 1.0;
-    bottom = 1.0 - bboxSize;
-  }
-  game.projectionMatrixPlaying = mat4.ortho(left, right, bottom, top, 10.0, -10.0);
+  updateCamera(1.0);
 
   game.lastUpdate = now;
 
@@ -884,16 +836,79 @@ function updateAI(i, dt)
 }
 
 
+function updateCamera(t)
+{
+  var minX = game.racerPos[0];
+  var maxX = minX;
+  var minY = game.racerPos[1];
+  var maxY = minY;
+  for (var i = 1; i < game.numRacers && game.racerIsHuman[i]; i++) {
+    var x = game.racerPos[i * 2];
+    var y = game.racerPos[i * 2 + 1];
+    
+    if (x < minX)
+      minX = x;
+    else if (x > maxX)
+      maxX = x;
+
+    if (y < minY)
+      minY = y;
+    else if (y > maxY)
+      maxY = y;
+  }
+  var bboxCenterX = (maxX + minX) / 2.0;
+  var bboxCenterY = (maxY + minY) / 2.0;
+  var bboxSize = Math.max(maxX - minX, maxY - minY) * 1.5;
+  if (bboxSize < 0.5)
+    bboxSize = 0.5;
+  else if (bboxSize > 1.0)
+    bboxSize = 1.0;
+
+  var left = bboxCenterX - bboxSize / 2.0;
+  var right = bboxCenterX + bboxSize / 2.0;
+  var top = bboxCenterY + bboxSize / 2.0;
+  var bottom = bboxCenterY - bboxSize / 2.0;
+
+  if (left < 0.0) {
+    left = 0.0;
+    right = bboxSize;
+  }
+  else if (right > 1.0) {
+    right = 1.0;
+    left = 1.0 - bboxSize;
+  }
+
+  if (bottom < 0.0) {
+    bottom = 0.0;
+    top = bboxSize;
+  }
+  else if (top > 1.0) {
+    top = 1.0;
+    bottom = 1.0 - bboxSize;
+  }
+
+  left = lerp(0.0, left, t);
+  right = lerp(1.0, right, t);
+  bottom = lerp(0.0, bottom, t);
+  top = lerp(1.0, top, t);
+
+  game.projectionMatrixPlaying = mat4.ortho(left, right, bottom, top, 10.0, -10.0);
+}
+
+
+function lerp(from, to, t)
+{
+  if (t < 0.0)
+    t = 0.0;
+  if (t > 1.0)
+    t = 1.0;
+  return from * (1.0 - t) + to * t;
+}
+
+
 function beginPlaying()
 {
-  var t = 0.5;
-
-  var left = 0;
-  var right = left + t;
-  var bottom = 1.0 - t;
-  var top = bottom + t;
-  
-  game.projectionMatrixPlaying = mat4.ortho(left, right, bottom, top, 10.0, -10.0);
+  updateCamera(1.0);
 }
 
 
@@ -1002,7 +1017,7 @@ function updateGameSetup()
 function beginGameSetup()
 {
   // We'll zoom this in during the countdown to the regular playing size.
-  game.projectionMatrixPlaying = mat4.ortho(0.0, 1.0, 0.0, 1.0, 10.0, -10.0);
+  updateCamera(0.0);
 
   for (var i = 0; i < game.numRacers; i++) {
     var ix = i * 2;
@@ -1067,14 +1082,8 @@ function updateCountdown()
   if (dt < 0)
     changeGameState(game.gameStates.playing);
 
-  var t = dt / 8.0 + 0.5;
-
-  var left = 0;
-  var right = left + t;
-  var bottom = 1.0 - t;
-  var top = 1.0;
-  
-  game.projectionMatrixPlaying = mat4.ortho(left, right, bottom, top, 10.0, -10.0);
+  var t = 1.0 - dt / 4.0;
+  updateCamera(t);
 }
 
 
