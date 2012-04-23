@@ -472,7 +472,9 @@ function init(drawCanvas, textCanvas)
 
 function drawPlaying()
 {
-  var doPostprocessing = document.getElementById('postprocessing').checked;
+  var doPostprocessing = false;
+  if (document.getElementById('postprocessing'))
+    doPostprocessing = document.getElementById('postprocessing').checked;
 
   var transform;
   if (game.cameraMatrix) {
