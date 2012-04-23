@@ -1,6 +1,6 @@
 import math
 
-WAYPOINT_WIDTH = 0.15
+WAYPOINT_WIDTH = 0.08
 
 
 def exportMap(rotoNodeName='RotoPaint1', pathElemName='Racetrack'):
