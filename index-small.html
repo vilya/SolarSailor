@@ -1,0 +1,157 @@
+<html>
+  <head>
+    <title>Solar Sailor</title>
+
+    <!-- Library which provides vector, matrix & quaternion classes. -->
+    <script type="text/javascript" src="js/gl-matrix.js"></script>
+
+    <!-- Library which provides WebGL setup helpers. -->
+    <script type="text/javascript" src="js/webgl-utils.js"></script>
+
+    <!-- Library which provides a seedable random number generator as a replacement for Math.random. -->
+    <script type="text/javascript" src="js/seedrandom.js"></script>
+
+    <!-- My code for this page. -->
+    <script type="text/javascript" src="js/map.js"></script>
+    <script type="text/javascript" src="js/main.js"></script>
+
+    <!-- The main drawing shader. -->
+    <script type="x-shader/x-vertex" id="draw-vs">
+      attribute vec2 pos;
+      attribute vec4 color;
+      attribute float radius;
+
+      uniform mat4 worldToViewportMatrix;
+
+      varying vec4 vColor;
+
+      void main()
+      {
+        vec4 worldPos = vec4(pos, 0.0, 1.0);
+        gl_Position = worldToViewportMatrix * worldPos;
+        gl_PointSize = radius * 2.0;
+        vColor = color;
+      }
+    </script>
+    <script type="x-shader/x-fragment" id="draw-fs">
+      precision mediump float;
+
+      varying vec4 vColor;
+
+      void main()
+      {
+        vec2 dist = vec2(0.5, 0.5) - gl_PointCoord;
+        float lenSqr = dist.x * dist.x + dist.y * dist.y;
+        if (lenSqr > 0.25)
+          discard;
+        float z = sqrt(1.0 - lenSqr);
+        gl_FragColor = vec4(vColor.xyz * z, vColor.w);
+      }
+    </script>
+
+    <!-- Waypoint shader. -->
+    <script type="x-shader/x-vertex" id="waypoint-vs">
+      attribute vec2 pos;
+
+      uniform mat4 worldToViewportMatrix;
+
+      void main()
+      {
+        vec4 worldPos = vec4(pos, 0.0, 1.0);
+        gl_Position = worldToViewportMatrix * worldPos;
+        gl_PointSize = 5.0;
+      }
+    </script>
+    <script type="x-shader/x-fragment" id="waypoint-fs">
+      precision mediump float;
+
+      uniform vec4 color;
+
+      void main()
+      {
+        gl_FragColor = color;
+      }
+    </script>
+
+    <!-- Post-processing shader. -->
+    <script type="x-shader/x-vertex" id="postprocess-vs">
+      attribute vec2 pos;
+      attribute vec2 uv;
+
+      uniform mat4 worldToViewportMatrix;
+
+      varying vec2 vUV;
+
+      void main()
+      {
+        vec4 worldPos = vec4(pos, 0.0, 1.0);
+        gl_Position = worldToViewportMatrix * worldPos;
+        vUV = uv;
+      }
+    </script>
+    <script type="x-shader/x-fragment" id="postprocess-fs">
+      precision mediump float;
+
+      uniform sampler2D tex;
+      uniform float kernel[25];
+      uniform vec2 uvOffset[25];
+
+      varying vec2 vUV;
+
+      void main()
+      {
+        vec4 total = vec4(0.0, 0.0, 0.0, 1.0);
+        for (int i = 0; i < 25; i++) {
+          vec4 tmp = texture2D(tex, vUV + uvOffset[i]);
+          total += tmp * kernel[i];
+        }
+
+        // Get the alpha value from the original source pixel.
+        vec4 original = texture2D(tex, vUV);
+        total.w = original.w;
+
+        gl_FragColor = total;
+      }
+    </script>
+
+    <!-- Text shader. -->
+    <script type="x-shader/x-vertex" id="text-vs">
+      attribute vec2 pos;
+      attribute vec2 uv;
+
+      uniform mat4 worldToViewportMatrix;
+
+      varying vec2 vUV;
+
+      void main()
+      {
+        vec4 worldPos = vec4(pos, 1, 1);
+        gl_Position = worldToViewportMatrix * worldPos;
+        vUV = uv;
+      }
+    </script>
+    <script type="x-shader/x-fragment" id="text-fs">
+      precision mediump float;
+
+      uniform sampler2D tex;
+
+      varying vec2 vUV;
+
+      void main()
+      {
+        vec4 texColor = texture2D(tex, vUV);
+        gl_FragColor = texColor;
+      }
+    </script>
+  </head>
+  <body onload="SolarSailor.main();">
+    <!-- The postprocessing is really slow and not actually that nice to look
+         at either, but go ahead and enable it anyway if you're curious.
+    <p>
+      <input type="checkbox" id="postprocessing"></input> Enable postprocessing
+      </p>
+    -->
+    <canvas id="solarsailor-draw-canvas" width="512" height="512"></canvas>
+    <canvas id="solarsailor-text-canvas" width="512" height="128" style="display: none;"></canvas>
+  </body>
+</html>
