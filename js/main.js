@@ -377,6 +377,11 @@ function init(drawCanvas, textCanvas)
 
   // Set up the racer data.
   game.numRacers = 4;
+  game.racerColor.push(1.0, 0.0, 0.0, 1.0);
+  game.racerColor.push(0.0, 1.0, 0.0, 1.0);
+  game.racerColor.push(0.0, 0.0, 1.0, 1.0);
+  game.racerColor.push(1.0, 1.0, 0.0, 1.0);
+
   for (var i = 0; i < game.numRacers; i++) {
     var radius = Math.random() * 5.0 + 2.5;
     var volume = Math.PI * Math.pow( (radius / game.viewportHeight), 2.0);
@@ -389,7 +394,6 @@ function init(drawCanvas, textCanvas)
     game.racerMass.push(volume * density);
     game.racerNextWaypoint.push(0);
     game.racerDest.push(0.0, 0.0, 0.0, 0.0);
-    game.racerColor.push(0.0, 0.0, 1.0, 1.0);
     game.racerName.push("Player " + (i + 1));
     game.racerTopSpeed.push(20.0);
     game.racerTopAccel.push(15.0);
@@ -399,7 +403,6 @@ function init(drawCanvas, textCanvas)
   game.racerKeyMap[0] = "WSAD";
   game.racerKeyMap[1] = "IKJL";
   game.racerIsHuman[0] = true; // I am, honest!
-  game.racerColor.splice(0, 4, 1, 0, 0, 1);
 
   // Convert some racer data to typed arrays so it can be passed straight in to WebGL.
   game.racerPos = new Float32Array(game.racerPos);
