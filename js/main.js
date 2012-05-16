@@ -383,7 +383,7 @@ function init(drawCanvas, textCanvas)
   game.racerColor.push(1.0, 1.0, 0.0, 1.0);
 
   for (var i = 0; i < game.numRacers; i++) {
-    var radius = Math.random() * 5.0 + 2.5;
+    var radius = Math.random() * 2.0 + 4.0;
     var volume = Math.PI * Math.pow( (radius / game.viewportHeight), 2.0);
     var density = Math.random() + 5.0; // Units: grammes per cubic centimetre -> g/cm^3. Earth is 5.52 g/cm^3
 
@@ -425,7 +425,7 @@ function init(drawCanvas, textCanvas)
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Set up the obstacle data.
-  game.numObstacles = 16;
+  game.numObstacles = 23;
   for (var i = 0; i < game.numObstacles; i++) {
     var radius = Math.random() * 10.0 + 2.5;
     var volume = Math.PI * Math.pow( (radius / game.viewportHeight), 2.0);
@@ -453,6 +453,23 @@ function init(drawCanvas, textCanvas)
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   // Set up the waypoint data.
+  var gateWidthScale = 0.8; // Amount to scale the width by.
+  for (var i = 0; i < SolarSailorMap.numWaypoints; i++) {
+    var cx = SolarSailorMap.waypointCenter[i * 2];
+    var cy = SolarSailorMap.waypointCenter[i * 2 + 1];
+
+    // Scale the left-hand end of the gate.
+    var ix = i * 4;
+    var iy = ix + 1;
+    SolarSailorMap.waypointPos[ix] = (SolarSailorMap.waypointPos[ix] - cx) * gateWidthScale + cx;
+    SolarSailorMap.waypointPos[iy] = (SolarSailorMap.waypointPos[iy] - cy) * gateWidthScale + cy;
+
+    // Scale the right-hand end of the gate.
+    var ix = iy + 1;
+    var iy = ix + 1;
+    SolarSailorMap.waypointPos[ix] = (SolarSailorMap.waypointPos[ix] - cx) * gateWidthScale + cx;
+    SolarSailorMap.waypointPos[iy] = (SolarSailorMap.waypointPos[iy] - cy) * gateWidthScale + cy;
+  }
   game.numWaypoints = SolarSailorMap.numWaypoints;
   game.waypointPos = SolarSailorMap.waypointPos;
   game.waypointCenter = SolarSailorMap.waypointCenter;
@@ -618,15 +635,15 @@ function updatePlaying()
   var now = Date.now();
 
   var dt = (now - game.lastUpdate) / 1000.0; // in seconds
-  if (dt > 0.25)
-    dt = 0.25;
+  if (dt > 0.1)
+    dt = 0.1;
 
   var finished = [];
 
   // Check whether the racers are about to pass through their target waypoint.
   for (var i = 0; i < game.numRacers; i++) {
-    // A = players current position, B = players position after this timestep.
-    // C = left end of the waypoint, D = right end of the waypoint.
+    // A = players current position, B = players current velocity.
+    // C = left end of the waypoint, D = direction to right end of the waypoint.
     var ax = game.racerPos[i * 2];
     var bx = game.racerVel[i * 2] * dt;
     var cx = game.waypointPos[game.racerNextWaypoint[i] * 4];
@@ -674,11 +691,11 @@ function updatePlaying()
     game.racerVel[i] += game.racerAccel[i] * dt;
     if (game.racerPos[i] < 0) {
       game.racerPos[i] = -game.racerPos[i];
-      game.racerVel[i] = -game.racerVel[i];
+      game.racerVel[i] = -game.racerVel[i] * 0.25;
     }
     else if (game.racerPos[i] > 1) {
       game.racerPos[i] = 2.0 - game.racerPos[i];
-      game.racerVel[i] = -game.racerVel[i];
+      game.racerVel[i] = -game.racerVel[i] * 0.25;
     }
 
     game.racerAccel[i] = 0.0;
@@ -862,8 +879,8 @@ function updateCamera(t)
   var bboxCenterX = (maxX + minX) / 2.0;
   var bboxCenterY = (maxY + minY) / 2.0;
   var bboxSize = Math.max(maxX - minX, maxY - minY) * 1.5;
-  if (bboxSize < 0.5)
-    bboxSize = 0.5;
+  if (bboxSize < 0.3)
+    bboxSize = 0.3;
   else if (bboxSize > 1.0)
     bboxSize = 1.0;
 
