@@ -351,8 +351,8 @@ function init(drawCanvas, textCanvas)
 
   // Set up the shaders
   game.drawShader = program("draw-vs", "draw-fs",
-      [ "worldToViewportMatrix", "color" ], // uniforms
-      [ "pos", "color", "radius" ] );       // attributes
+      [ "worldToViewportMatrix", "color" ],   // uniforms
+      [ "pos", "color", "radius", "dest" ] ); // attributes
   game.waypointShader = program("waypoint-vs", "waypoint-fs",
       [ "worldToViewportMatrix", "color" ], // uniforms
       [ "pos" ] );                          // attributes
@@ -526,6 +526,9 @@ function drawPlaying()
   gl.vertexAttribPointer(game.drawShader.attribs['radius'], 1, gl.FLOAT, false, 4, 0);
   gl.bindBuffer(gl.ARRAY_BUFFER, game.racerColorBuf);
   gl.vertexAttribPointer(game.drawShader.attribs['color'], 4, gl.FLOAT, false, 16, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, game.racerDestBuf);
+  gl.vertexAttribPointer(game.drawShader.attribs['dest'], 2, gl.FLOAT, false, 8, 0);
+
   gl.drawArrays(gl.POINTS, 0, game.numRacers);
 
   // Draw the obstacles, using the same shader 
